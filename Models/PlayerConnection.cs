@@ -10,13 +10,17 @@ using System.Text.Json.Serialization;
 using System.Threading;
 using System.Threading.Tasks;
 using WebSocketSharp;
-using MajdataPlay.View.Types;
 using ErrorEventArgs = WebSocketSharp.ErrorEventArgs;
 using System.Diagnostics;
 using MajdataEdit_Neo.Utils;
 using Avalonia.Threading;
 using System.Collections.Concurrent;
 using MsBox.Avalonia.Enums;
+using MajSimai;
+using MajdataEdit_Neo.Views;
+using MajdataEdit_Neo.ViewModels;
+using Types.MajWs;
+using MajdataEdit_Neo.Types;
 
 namespace MajdataEdit_Neo.Models;
 internal class PlayerConnection : IDisposable
@@ -101,22 +105,6 @@ internal class PlayerConnection : IDisposable
     {
         Debug.WriteLine(args);
     }
-/*    public async Task LoadAsync(byte[] track,
-                                       byte[] cover,
-                                       byte[] mv)
-    {
-        var req = new MajWsRequestBase()
-        {
-            requestType = MajWsRequestType.Load,
-            requestData = new MajWsRequestLoadBinary()
-            {
-                Image = cover,
-                Track = track,
-                Video = mv
-            }
-        };
-        await SendAsync(req);
-    }*/
     public async Task LoadAsync(string trackPath,
                                        string coverPath,
                                        string mvPath)
@@ -134,12 +122,23 @@ internal class PlayerConnection : IDisposable
         };
         await SendAsync(req);
     }
-    public async Task ResetAsync()
+    public async Task SettingAsync()
     {
         var req = new MajWsRequestBase()
         {
-            requestType = MajWsRequestType.Reset,
-            requestData = null
+            requestType = MajWsRequestType.Setting,
+            requestData = new MajWsRequestSetting()
+            {
+                ViewSetting = new MajViewSetting()
+                {
+                    TapSpeed = 7.0f,
+                    TouchSpeed = 7.25f,
+                    SmoothSlideAnime = true,
+                    BackgroundDim = 0.8f,
+                    ComboStatusType = EditorComboIndicator.Combo,
+                    JudgeDisplayMode = JudgeDisplayMode.Both
+                }
+            }
         };
         await SendAsync(req);
     }
@@ -161,21 +160,27 @@ internal class PlayerConnection : IDisposable
         };
         await SendAsync(req);
     }
-    public async Task ParseAndPlayAsync(double startAt, double offset, string fumen,float speed=1)
+    public async Task ParseAndPlayAsync(PlaybackMode mode, double startAt, double offset, float speed, 
+        string fumen, string title, string artist, int difficulty, string? maidataPath = null)
     {
         if (ViewSummary.State != ViewStatus.Loaded && ViewSummary.State != ViewStatus.Error){
             OnLoadRequired?.Invoke(this,new EventArgs());
-            return;
+            //return;
         }
         var req = new MajWsRequestBase()
         {
             requestType = MajWsRequestType.Play,
             requestData = new MajWsRequestPlay()
             {
+                Mode = mode,
                 Offset = offset,
-                SimaiFumen = fumen,
                 StartAt = startAt,
-                Speed = speed
+                Speed = speed,
+                SimaiFumen = fumen,
+                Title = title,
+                Artist = artist,
+                Difficulty = difficulty,
+                MaidataPath = maidataPath
             }
         };
         await SendAsync(req);

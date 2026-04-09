@@ -1,6 +1,6 @@
 using System;
 #nullable enable
-namespace MajdataPlay.View.Types
+namespace Types.MajWs
 {
     internal readonly struct MajWsRequestBase
     {
@@ -9,9 +9,8 @@ namespace MajdataPlay.View.Types
     }
     public enum MajWsRequestType 
     {
-        Reset,
+        Setting,
         Load,
-        Parse,
         Play,
         Pause,
         Resume,

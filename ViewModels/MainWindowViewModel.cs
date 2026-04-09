@@ -18,13 +18,13 @@ using System.Collections.ObjectModel;
 using MsBox.Avalonia;
 using AvaloniaEdit;
 using MsBox.Avalonia.Enums;
-using MajdataPlay.View.Types;
 using MajdataEdit_Neo.Utils;
 using Avalonia.Threading;
 using MajdataEdit_Neo.Modules.AutoSave;
 using MajdataEdit_Neo.Modules.AutoSave.Contexts;
 using System.Runtime.InteropServices;
 using MajdataEdit_Neo.Types;
+using Types.MajWs;
 
 namespace MajdataEdit_Neo.ViewModels;
 
@@ -524,7 +524,10 @@ public partial class MainWindowViewModel : ViewModelBase
             shouldRecoverPlayControl = false;
             playStartTime = TrackTime;
             _textEditor = textEditor;
-            await _playerConnection.ParseAndPlayAsync(TrackTime, Offset, CurrentSimaiFile.RawCharts[SelectedDifficulty], 1);
+            await _playerConnection.SettingAsync();
+            await _playerConnection.ParseAndPlayAsync(PlaybackMode.Normal, TrackTime, Offset, 1, 
+                CurrentSimaiFile.RawCharts[SelectedDifficulty], 
+                CurrentSimaiFile.Title, CurrentSimaiFile.Artist, SelectedDifficulty);
         }
         finally
         {
@@ -558,7 +561,10 @@ public partial class MainWindowViewModel : ViewModelBase
             shouldRecoverPlayControl = false;
             playStartTime = TrackTime;
             _textEditor = textEditor;
-            await _playerConnection.ParseAndPlayAsync(TrackTime, Offset, CurrentSimaiFile.RawCharts[SelectedDifficulty], 1);
+            await _playerConnection.SettingAsync();
+            await _playerConnection.ParseAndPlayAsync(PlaybackMode.Normal, TrackTime, Offset, 1,
+                CurrentSimaiFile.RawCharts[SelectedDifficulty],
+                CurrentSimaiFile.Title, CurrentSimaiFile.Artist, SelectedDifficulty);
         }
         finally
         {

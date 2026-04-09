@@ -1,5 +1,4 @@
-
-namespace MajdataPlay.View.Types
+namespace Types.MajWs
 {
     internal readonly struct MajWsRequestLoad
     {
