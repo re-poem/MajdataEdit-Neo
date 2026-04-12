@@ -1,223 +1,240 @@
 <Window xmlns="https://github.com/avaloniaui"
-        xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
-        xmlns:vm="using:MajdataEdit_Neo.ViewModels"
-        xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
-        xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
-        xmlns:AvaloniaEdit="clr-namespace:AvaloniaEdit;assembly=AvaloniaEdit"
-        xmlns:controls="clr-namespace:MajdataEdit_Neo.Controls"
-        mc:Ignorable="d" d:DesignWidth="750" d:DesignHeight="580"
-        MinHeight="580"
-        MinWidth="750"
-        x:Class="MajdataEdit_Neo.Views.MainWindow"
-        x:DataType="vm:MainWindowViewModel"
-        Icon="/Assets/avalonia-logo.ico"
-        Title="{Binding WindowTitle}"
-        TransparencyLevelHint="AcrylicBlur"
-        Background="Transparent"
-        ExtendClientAreaToDecorationsHint="False">
+		xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+		xmlns:vm="using:MajdataEdit_Neo.ViewModels"
+		xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
+		xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
+		xmlns:AvaloniaEdit="clr-namespace:AvaloniaEdit;assembly=AvaloniaEdit"
+		xmlns:controls="clr-namespace:MajdataEdit_Neo.Controls"
+		mc:Ignorable="d" d:DesignWidth="750" d:DesignHeight="600"
+		MinHeight="600"
+		MinWidth="750"
+		x:Class="MajdataEdit_Neo.Views.MainWindow"
+		x:DataType="vm:MainWindowViewModel"
+		Icon="/Assets/avalonia-logo.ico"
+		Title="{Binding WindowTitle}"
+		TransparencyLevelHint="AcrylicBlur"
+		Background="Transparent"
+		ExtendClientAreaToDecorationsHint="False">
 
-  <Design.DataContext>
-    <!-- This only sets the DataContext for the previewer in an IDE,
-             to set the actual DataContext for runtime, set the DataContext property in code (look at App.axaml.cs) -->
-    <vm:MainWindowViewModel/>
-  </Design.DataContext>
-  <Window.Resources>
-    <StreamGeometry x:Key="play_pause">M200-312v-336l240 168-240 168Zm320-8v-320h80v320h-80Zm160 0v-320h80v320h-80Z</StreamGeometry>
-    <StreamGeometry x:Key="stop">M320-640v320-320Zm-80 400v-480h480v480H240Zm80-80h320v-320H320v320Z</StreamGeometry>
-    <StreamGeometry x:Key="zoom_in">M440-440H200v-80h240v-240h80v240h240v80H520v240h-80v-240Z</StreamGeometry>
-    <StreamGeometry x:Key="zoom_out">M200-440v-80h560v80H200Z</StreamGeometry>
-    <StreamGeometry x:Key="mirror_v">M320-440v-287L217-624l-57-56 200-200 200 200-57 56-103-103v287h-80ZM600-80 400-280l57-56 103 103v-287h80v287l103-103 57 56L600-80Z</StreamGeometry>
-    <StreamGeometry x:Key="mirror_h">M280-160 80-360l200-200 56 57-103 103h287v80H233l103 103-56 57Zm400-240-56-57 103-103H440v-80h287L624-743l56-57 200 200-200 200Z</StreamGeometry>
-    <StreamGeometry x:Key="mirror_180">M480-80 310-250l57-57 73 73v-206H235l73 72-58 58L80-480l169-169 57 57-72 72h206v-206l-73 73-57-57 170-170 170 170-57 57-73-73v206h205l-73-72 58-58 170 170-170 170-57-57 73-73H520v205l72-73 58 58L480-80Z</StreamGeometry>
-    <StreamGeometry x:Key="rotate_l">M440-80q-50-5-96-24.5T256-156l56-58q29 21 61.5 34t66.5 18v82Zm80 0v-82q104-15 172-93.5T760-438q0-117-81.5-198.5T480-718h-8l64 64-56 56-160-160 160-160 56 58-62 62h6q75 0 140.5 28.5t114 77q48.5 48.5 77 114T840-438q0 137-91 238.5T520-80ZM198-214q-32-42-51.5-88T122-398h82q5 34 18 66.5t34 61.5l-58 56Zm-76-264q6-51 25-98t51-86l58 56q-21 29-34 61.5T204-478h-82Z</StreamGeometry>
-    <StreamGeometry x:Key="rotate_r">M522-80v-82q34-5 66.5-18t61.5-34l56 58q-42 32-88 51.5T522-80Zm-80 0Q304-98 213-199.5T122-438q0-75 28.5-140.5t77-114q48.5-48.5 114-77T482-798h6l-62-62 56-58 160 160-160 160-56-56 64-64h-8q-117 0-198.5 81.5T202-438q0 104 68 182.5T442-162v82Zm322-134-58-56q21-29 34-61.5t18-66.5h82q-5 50-24.5 96T764-214Zm76-264h-82q-5-34-18-66.5T706-606l58-56q32 39 51 86t25 98Z</StreamGeometry>
-    <StreamGeometry x:Key="open">M160-160q-33 0-56.5-23.5T80-240v-480q0-33 23.5-56.5T160-800h240l80 80h320q33 0 56.5 23.5T880-640H447l-80-80H160v480l96-320h684L837-217q-8 26-29.5 41.5T760-160H160Zm84-80h516l72-240H316l-72 240Zm0 0 72-240-72 240Zm-84-400v-80 80Z</StreamGeometry>
-    <StreamGeometry x:Key="new">M440-240h80v-120h120v-80H520v-120h-80v120H320v80h120v120ZM240-80q-33 0-56.5-23.5T160-160v-640q0-33 23.5-56.5T240-880h320l240 240v480q0 33-23.5 56.5T720-80H240Zm280-520v-200H240v640h480v-440H520ZM240-800v200-200 640-640Z</StreamGeometry>
-  </Window.Resources>
+	<Design.DataContext>
+		<!-- This only sets the DataContext for the previewer in an IDE,
+		to set the actual DataContext for runtime, set the DataContext property in code (look at App.axaml.cs) -->
+		<vm:MainWindowViewModel/>
+	</Design.DataContext>
+	<Window.Resources>
+		<StreamGeometry x:Key="play_pause">M200-312v-336l240 168-240 168Zm320-8v-320h80v320h-80Zm160 0v-320h80v320h-80Z</StreamGeometry>
+		<StreamGeometry x:Key="stop">M320-640v320-320Zm-80 400v-480h480v480H240Zm80-80h320v-320H320v320Z</StreamGeometry>
+		<StreamGeometry x:Key="zoom_in">M440-440H200v-80h240v-240h80v240h240v80H520v240h-80v-240Z</StreamGeometry>
+		<StreamGeometry x:Key="zoom_out">M200-440v-80h560v80H200Z</StreamGeometry>
+		<StreamGeometry x:Key="mirror_v">M320-440v-287L217-624l-57-56 200-200 200 200-57 56-103-103v287h-80ZM600-80 400-280l57-56 103 103v-287h80v287l103-103 57 56L600-80Z</StreamGeometry>
+		<StreamGeometry x:Key="mirror_h">M280-160 80-360l200-200 56 57-103 103h287v80H233l103 103-56 57Zm400-240-56-57 103-103H440v-80h287L624-743l56-57 200 200-200 200Z</StreamGeometry>
+		<StreamGeometry x:Key="mirror_180">M480-80 310-250l57-57 73 73v-206H235l73 72-58 58L80-480l169-169 57 57-72 72h206v-206l-73 73-57-57 170-170 170 170-57 57-73-73v206h205l-73-72 58-58 170 170-170 170-57-57 73-73H520v205l72-73 58 58L480-80Z</StreamGeometry>
+		<StreamGeometry x:Key="rotate_l">M440-80q-50-5-96-24.5T256-156l56-58q29 21 61.5 34t66.5 18v82Zm80 0v-82q104-15 172-93.5T760-438q0-117-81.5-198.5T480-718h-8l64 64-56 56-160-160 160-160 56 58-62 62h6q75 0 140.5 28.5t114 77q48.5 48.5 77 114T840-438q0 137-91 238.5T520-80ZM198-214q-32-42-51.5-88T122-398h82q5 34 18 66.5t34 61.5l-58 56Zm-76-264q6-51 25-98t51-86l58 56q-21 29-34 61.5T204-478h-82Z</StreamGeometry>
+		<StreamGeometry x:Key="rotate_r">M522-80v-82q34-5 66.5-18t61.5-34l56 58q-42 32-88 51.5T522-80Zm-80 0Q304-98 213-199.5T122-438q0-75 28.5-140.5t77-114q48.5-48.5 114-77T482-798h6l-62-62 56-58 160 160-160 160-56-56 64-64h-8q-117 0-198.5 81.5T202-438q0 104 68 182.5T442-162v82Zm322-134-58-56q21-29 34-61.5t18-66.5h82q-5 50-24.5 96T764-214Zm76-264h-82q-5-34-18-66.5T706-606l58-56q32 39 51 86t25 98Z</StreamGeometry>
+		<StreamGeometry x:Key="open">M160-160q-33 0-56.5-23.5T80-240v-480q0-33 23.5-56.5T160-800h240l80 80h320q33 0 56.5 23.5T880-640H447l-80-80H160v480l96-320h684L837-217q-8 26-29.5 41.5T760-160H160Zm84-80h516l72-240H316l-72 240Zm0 0 72-240-72 240Zm-84-400v-80 80Z</StreamGeometry>
+		<StreamGeometry x:Key="new">M440-240h80v-120h120v-80H520v-120h-80v120H320v80h120v120ZM240-80q-33 0-56.5-23.5T160-160v-640q0-33 23.5-56.5T240-880h320l240 240v480q0 33-23.5 56.5T720-80H240Zm280-520v-200H240v640h480v-440H520ZM240-800v200-200 640-640Z</StreamGeometry>
+	</Window.Resources>
 
-  <Panel>
-    <ExperimentalAcrylicBorder IsHitTestVisible="False">
-      <ExperimentalAcrylicBorder.Material>
-        <ExperimentalAcrylicMaterial
-            BackgroundSource="Digger"
-            TintColor="Black"
-            TintOpacity="1"
-            MaterialOpacity="0.75" />
-      </ExperimentalAcrylicBorder.Material>
-    </ExperimentalAcrylicBorder>
-    <Grid RowDefinitions="20,100,*,60,100"
-          ColumnDefinitions="5,60,60,*" ZIndex="5" IsVisible="{Binding IsLoaded}">
-      <Menu Grid.Row="0" Grid.ColumnSpan="4">
-        <MenuItem Header="_File" >
-          <MenuItem Header="_New" Command="{Binding NewFile}"/>
-          <MenuItem Header="_Open" Command="{Binding OpenFile}"/>
-          <MenuItem Header="_Save" Command="{Binding SaveFile}"/>
-          <Separator/>
-          <MenuItem Header="_Export Video"/>
-          <MenuItem Header="_Upload to Majnet"/>
-        </MenuItem>
-        <MenuItem Header="_Edit">
-          <MenuItem Header="Mirror Horizontally" CommandParameter="{Binding #Editor}" Command="{Binding MirrorHorizontal}">
-            <MenuItem.Icon>
-              <PathIcon Data="{StaticResource mirror_h}"/>
-            </MenuItem.Icon>
-          </MenuItem>
-          <MenuItem Header="Mirror Vertically" CommandParameter="{Binding #Editor}" Command="{Binding MirrorVertical}">
-            <MenuItem.Icon>
-              <PathIcon Data="{StaticResource mirror_v}"/>
-            </MenuItem.Icon>
-          </MenuItem>
-          <MenuItem Header="Mirror 180°" CommandParameter="{Binding #Editor}" Command="{Binding Mirror180}">
-            <MenuItem.Icon>
-              <PathIcon Data="{StaticResource mirror_180}"/>
-            </MenuItem.Icon>
-          </MenuItem>
-          <MenuItem Header="Rotate 45°" CommandParameter="{Binding #Editor}" Command="{Binding Turn45}">
-            <MenuItem.Icon>
-              <PathIcon Data="{StaticResource rotate_r}"/>
-            </MenuItem.Icon>
-          </MenuItem>
-          <MenuItem Header="Rotate -45°" CommandParameter="{Binding #Editor}" Command="{Binding TurnNegative45}">
-            <MenuItem.Icon>
-              <PathIcon Data="{StaticResource rotate_l}"/>
-            </MenuItem.Icon>
-          </MenuItem>
-          <Separator/>
-          <MenuItem Header="Chart Info" Command="{Binding OpenChartInfoWindow}"/>
-          <Separator/>
-          <MenuItem Header="Find and Replace" PointerPressed="FindReplace_PointerPressed"/>
-        </MenuItem>
-        <MenuItem Header="_Tools">
-          <MenuItem Header="BPM Tap" Command="{Binding OpenBpmTapWindow}"/>
-          <MenuItem Header="Compress bg.mp4"/>
-        </MenuItem>
-        <MenuItem Header="_About">
-          <MenuItem Header="Discord" Command="{Binding AboutButtonClicked}" CommandParameter="0"/>
-          <MenuItem Header="QQ" Command="{Binding AboutButtonClicked}" CommandParameter="1"/>
-          <Separator/>
-          <MenuItem Header="Github" Command="{Binding AboutButtonClicked}" CommandParameter="2"/>
-          <MenuItem Header="Majnet" Command="{Binding AboutButtonClicked}" CommandParameter="3"/>
-        </MenuItem>
-      </Menu>
+	<Panel>
+		<ExperimentalAcrylicBorder IsHitTestVisible="False">
+			<ExperimentalAcrylicBorder.Material>
+				<ExperimentalAcrylicMaterial
+				BackgroundSource="Digger"
+				TintColor="Black"
+				TintOpacity="1"
+				MaterialOpacity="0.75" />
+			</ExperimentalAcrylicBorder.Material>
+		</ExperimentalAcrylicBorder>
+		<Grid RowDefinitions="20,100,*,60,100"
+			  ColumnDefinitions="5,60,60,*" ZIndex="5" IsVisible="{Binding IsLoaded}">
+			<Menu Grid.Row="0" Grid.ColumnSpan="4">
+				<MenuItem Header="_File" >
+					<MenuItem Header="_New" Command="{Binding NewFile}"/>
+					<MenuItem Header="_Open" Command="{Binding OpenFile}"/>
+					<MenuItem Header="_Save" Command="{Binding SaveFile}"/>
+					<Separator/>
+					<MenuItem Header="_Export Video" Command="{Binding PlayRecord}" CommandParameter="{Binding #Editor}"/>
+					<MenuItem Header="_Upload to Majnet"/>
+				</MenuItem>
+				<MenuItem Header="_Edit">
+					<MenuItem Header="Mirror Horizontally" CommandParameter="{Binding #Editor}" Command="{Binding MirrorHorizontal}">
+						<MenuItem.Icon>
+							<PathIcon Data="{StaticResource mirror_h}"/>
+						</MenuItem.Icon>
+					</MenuItem>
+					<MenuItem Header="Mirror Vertically" CommandParameter="{Binding #Editor}" Command="{Binding MirrorVertical}">
+						<MenuItem.Icon>
+							<PathIcon Data="{StaticResource mirror_v}"/>
+						</MenuItem.Icon>
+					</MenuItem>
+					<MenuItem Header="Mirror 180°" CommandParameter="{Binding #Editor}" Command="{Binding Mirror180}">
+						<MenuItem.Icon>
+							<PathIcon Data="{StaticResource mirror_180}"/>
+						</MenuItem.Icon>
+					</MenuItem>
+					<MenuItem Header="Rotate 45°" CommandParameter="{Binding #Editor}" Command="{Binding Turn45}">
+						<MenuItem.Icon>
+							<PathIcon Data="{StaticResource rotate_r}"/>
+						</MenuItem.Icon>
+					</MenuItem>
+					<MenuItem Header="Rotate -45°" CommandParameter="{Binding #Editor}" Command="{Binding TurnNegative45}">
+						<MenuItem.Icon>
+							<PathIcon Data="{StaticResource rotate_l}"/>
+						</MenuItem.Icon>
+					</MenuItem>
+					<Separator/>
+					<MenuItem Header="Chart Info" Command="{Binding OpenChartInfoWindow}"/>
+					<Separator/>
+					<MenuItem Header="Find and Replace" PointerPressed="FindReplace_PointerPressed"/>
+				</MenuItem>
+				<MenuItem Header="_Setting">
+					<MenuItem Header="View Setting" Command="{Binding OpenSettingsWindow}"/>
+				</MenuItem>
+				<MenuItem Header="_Tools">
+					<MenuItem Header="BPM Tap" Command="{Binding OpenBpmTapWindow}"/>
+					<MenuItem Header="Compress bg.mp4"/>
+				</MenuItem>
+				<MenuItem Header="_About">
+					<MenuItem Header="Discord" Command="{Binding AboutButtonClicked}" CommandParameter="0"/>
+					<MenuItem Header="QQ" Command="{Binding AboutButtonClicked}" CommandParameter="1"/>
+					<Separator/>
+					<MenuItem Header="Github" Command="{Binding AboutButtonClicked}" CommandParameter="2"/>
+					<MenuItem Header="Majnet" Command="{Binding AboutButtonClicked}" CommandParameter="3"/>
+				</MenuItem>
+			</Menu>
 
-      <StackPanel Grid.Row="1" Grid.Column="1" Grid.ColumnSpan="2" Grid.RowSpan="8">
-        <Label Height="100" Name="Time" FontSize="40" HorizontalAlignment="Center" VerticalAlignment="Center"
-               Content="{Binding DisplayTime}" Padding="0 30 0 0 "/>
-        <Label VerticalAlignment="Center">Difficulty</Label>
-        <ComboBox Name="Difficulty"
-                  Width="120" VerticalAlignment="Center"
-                  SelectedIndex="{Binding SelectedDifficulty}">
-          <ComboBoxItem Content="EASY" />
-          <ComboBoxItem Content="BASIC" />
-          <ComboBoxItem Content="ADVANCED" />
-          <ComboBoxItem Content="EXPERT" />
-          <ComboBoxItem Content="MASTER" />
-          <ComboBoxItem Content="Re:MASTER" />
-          <ComboBoxItem Content="ORIGINAL" />
-        </ComboBox>
-        <Label  VerticalAlignment="Center">Level</Label>
-        <TextBox  Name="Level" Text="{Binding Level}"/>
-        <Label  VerticalAlignment="Center">Designer</Label>
-        <TextBox  Name="Designer" Text="{Binding Designer}"/>
-        <Label  VerticalAlignment="Center">Offset</Label>
-        <NumericUpDown  Name="First" Value="{Binding Offset}" Increment="0.01"/>
-        <CheckBox Grid.Row="8" Grid.Column="1" Grid.ColumnSpan="2" Margin="0 10 0 0"
-                  IsChecked="{Binding IsFollowCursor}">Follow Cursor</CheckBox>
-        <CheckBox IsChecked="{Binding IsConnected}" IsEnabled="False">Connection</CheckBox>
-      </StackPanel>
+			<StackPanel Grid.Row="1" Grid.Column="1" Grid.ColumnSpan="2" Grid.RowSpan="8"
+						Margin="6 0 0 0" Width="116">
+				<Label Height="90" Name="Time" FontSize="40" HorizontalAlignment="Center" VerticalAlignment="Center"
+					   Content="{Binding DisplayTime}" Padding="0 30 0 0"/>
+				<Label VerticalAlignment="Center">Difficulty</Label>
+				<ComboBox Name="Difficulty"
+						  Width="116" VerticalAlignment="Center"
+						  SelectedIndex="{Binding SelectedDifficulty}">
+					<ComboBoxItem Content="EASY" />
+					<ComboBoxItem Content="BASIC" />
+					<ComboBoxItem Content="ADVANCED" />
+					<ComboBoxItem Content="EXPERT" />
+					<ComboBoxItem Content="MASTER" />
+					<ComboBoxItem Content="Re:MASTER" />
+					<ComboBoxItem Content="ORIGINAL" />
+				</ComboBox>
+				<Label  VerticalAlignment="Center">Level</Label>
+				<TextBox  Name="Level" Text="{Binding Level}"/>
+				<Label  VerticalAlignment="Center">Designer</Label>
+				<TextBox  Name="Designer" Text="{Binding Designer}"/>
+				<Label  VerticalAlignment="Center">Offset</Label>
+				<NumericUpDown  Name="First" Value="{Binding Offset}" Increment="0.01"/>
 
+				<DockPanel Margin="0 10 0 0" LastChildFill="False">
+					<Label Content="Error" DockPanel.Dock="Left" />
+					<Label Name="ErrorCountLabel" Content="100000" DockPanel.Dock="Right"/>
+				</DockPanel>
 
-      <Button IsEnabled="{Binding IsPlayControlEnabled}" HotKey="Ctrl+Shift+z" Grid.Row="3" Grid.Column="1" Height="50" Width="50" Margin="5"
-              CommandParameter="true" Command="{Binding Stop}">
-        <PathIcon Width="13" Data="{StaticResource stop}"/>
-      </Button>
-      <Button IsEnabled="{Binding IsPlayControlEnabled}" HotKey="Ctrl+Shift+x" Grid.Row="3" Grid.Column="2" Height="50" Width="50" Margin="5"
-              CommandParameter="{Binding #Editor}" Command="{Binding PlayPause}">
-        <PathIcon Data="{StaticResource play_pause}"/>
-      </Button>
-
-      <AvaloniaEdit:TextEditor Grid.Column="3" Grid.Row="1" Grid.RowSpan="3"
-                               Document="{Binding FumenDocument}"
-                               Name="Editor" BorderBrush="#50FFFFFF" BorderThickness="0.5"
-                               ShowLineNumbers="True" Margin="5 5 5 5" Padding="5" WordWrap="False"
-                               FontFamily="Cascadia Code,Consolas,Menlo,Monospace"
-                            >
-        <AvaloniaEdit:TextEditor.ContextFlyout>
-          <MenuFlyout>
-            <MenuItem Header="Mirror Horizontally" CommandParameter="{Binding #Editor}" Command="{Binding MirrorHorizontal}">
-              <MenuItem.Icon>
-                <PathIcon Data="{StaticResource mirror_h}"/>
-              </MenuItem.Icon>
-            </MenuItem>
-            <MenuItem Header="Mirror Vertically" CommandParameter="{Binding #Editor}" Command="{Binding MirrorVertical}">
-              <MenuItem.Icon>
-                <PathIcon Data="{StaticResource mirror_v}"/>
-              </MenuItem.Icon>
-            </MenuItem>
-            <MenuItem Header="Mirror 180°"  CommandParameter="{Binding #Editor}" Command="{Binding Mirror180}">
-              <MenuItem.Icon>
-                <PathIcon Data="{StaticResource mirror_180}"/>
-              </MenuItem.Icon>
-            </MenuItem>
-            <MenuItem Header="Rotate 45°" CommandParameter="{Binding #Editor}" Command="{Binding Turn45}">
-              <MenuItem.Icon>
-                <PathIcon Data="{StaticResource rotate_r}"/>
-              </MenuItem.Icon>
-            </MenuItem>
-            <MenuItem Header="Rotate -45°" CommandParameter="{Binding #Editor}" Command="{Binding TurnNegative45}">
-              <MenuItem.Icon>
-                <PathIcon Data="{StaticResource rotate_l}"/>
-              </MenuItem.Icon>
-            </MenuItem>
-            <Separator/>
-            <MenuItem Header="Find and Replace" PointerPressed="FindReplace_PointerPressed"/>
-          </MenuFlyout>
-        </AvaloniaEdit:TextEditor.ContextFlyout>
-      </AvaloniaEdit:TextEditor>
+				<CheckBox Grid.Row="8" Margin="0 0 0 0"
+						  IsChecked="{Binding IsFollowCursor}" FontSize="12">Follow Cursor</CheckBox>
+				<StackPanel Orientation="Horizontal" Margin="9 0 0 0">
+					<CheckBox IsChecked="{Binding IsConnected}" IsEnabled="False" Width="38" Margin="0 -7 0 0"/>
+					<Button IsEnabled="{Binding IsPlayControlEnabled}" HotKey="Ctrl+Shift+z"
+							CommandParameter="{Binding #Editor}" Command="{Binding PlayIncludeOp}" Width="64" >Record</Button>
+				</StackPanel>
+				<Label Content="Connected" FontSize="8" Margin="-4 -11 0 0"/>
+			</StackPanel>
 
 
-      <controls:SimaiVisualizerControl Name="SimaiVisual"
-                                       Height="100" Grid.Row="4" Grid.ColumnSpan="4"
-                                       Time="{Binding TrackTime}" TrackIf="{Binding SongTrackInfo}"
-                                       ZoomLevel="{Binding TrackZoomLevel}" SimaiChart="{Binding CurrentSimaiChart}"
-                                       Offset="{Binding Offset}" CaretTime="{Binding CaretTime}" IsAnimated ="{Binding IsAnimated}"/>
-      <DockPanel Grid.Row="4" >
-        <Button Name="ZoomOut" DockPanel.Dock="Bottom" Width="30" Height="30" Margin="10">
-          <PathIcon Width="8" Data="{StaticResource zoom_out}"/>
-        </Button>
-        <Button Name="ZoomIn" DockPanel.Dock="Bottom" Width="30" Height="30" Margin="10">
-          <PathIcon Width="8" Data="{StaticResource zoom_in}"/>
-        </Button>
-      </DockPanel>
-    </Grid>
 
-    <Grid RowDefinitions="150,*" ColumnDefinitions="*,*" Margin="200" ZIndex="5" IsVisible="{Binding !IsLoaded}">
-      <Button Grid.Column="0" Grid.Row="0" Height="150" Width="150" HorizontalAlignment="Center"
-              Command="{Binding NewFile}">
-        <PathIcon Data="{StaticResource new}"/>
-      </Button>
-      <Button Grid.Column="1" Grid.Row="0" Height="150" Width="150" HorizontalAlignment="Center"
-              Command="{Binding OpenFile}">
-        <PathIcon Data="{StaticResource open}"/>
-      </Button>
-      <Label Grid.Column="0" Grid.Row="1" FontSize="20" HorizontalAlignment="Center">New</Label>
-      <Label Grid.Column="1" Grid.Row="1" FontSize="20" HorizontalAlignment="Center">Open</Label>
-      <Button IsVisible="False" HotKey="Ctrl+J" CommandParameter="{Binding #Editor}" Command="{Binding MirrorHorizontal}"/>
-      <Button IsVisible="False" HotKey="Ctrl+K" CommandParameter="{Binding #Editor}" Command="{Binding MirrorVertical}"/>
-      <Button IsVisible="False" HotKey="Ctrl+L" CommandParameter="{Binding #Editor}" Command="{Binding Mirror180}"/>
-      <Button IsVisible="False" HotKey="Ctrl+U" CommandParameter="{Binding #Editor}" Command="{Binding Turn45}"/>
-      <Button IsVisible="False" HotKey="Ctrl+I" CommandParameter="{Binding #Editor}" Command="{Binding TurnNegative45}"/>
-      <Button IsVisible="False" HotKey="Ctrl+S"  Command="{Binding SaveFile}"/>
-      <Button IsVisible="False" HotKey="Ctrl+O" Command="{Binding OpenFile}"/>
-      <Button IsVisible="False" IsEnabled="{Binding IsPlayControlEnabled}" HotKey="Ctrl+Shift+C" Command="{Binding PlayStop}" CommandParameter="{Binding #Editor}"/>
-    </Grid>
-    <DockPanel >
-      <Image DockPanel.Dock="Right"
-             HorizontalAlignment="Right"
-             Margin="0 0 -30 100" ZIndex="-9999"
-             Opacity="0.5"
-             Source="avares://MajdataEdit-Neo/Assets/xxlb.png"></Image>
-    </DockPanel>
+			<Button IsEnabled="{Binding IsPlayControlEnabled}" HotKey="Ctrl+Shift+z" Grid.Row="3" Grid.Column="1" Height="50" Width="50" Margin="5"
+					CommandParameter="true" Command="{Binding Stop}">
+				<PathIcon Width="13" Data="{StaticResource stop}"/>
+			</Button>
 
-  </Panel>
+			<Button IsEnabled="{Binding IsPlayControlEnabled}" HotKey="Ctrl+Shift+x" Grid.Row="3" Grid.Column="2" Height="50" Width="50" Margin="5"
+					CommandParameter="{Binding #Editor}" Command="{Binding PlayPause}">
+				<PathIcon Data="{StaticResource play_pause}"/>
+			</Button>
+
+			<AvaloniaEdit:TextEditor Grid.Column="3" Grid.Row="1" Grid.RowSpan="3"
+									 Document="{Binding FumenDocument}"
+									 Name="Editor" BorderBrush="#50FFFFFF" BorderThickness="0.5"
+									 ShowLineNumbers="True" Margin="5 5 5 5" Padding="5" WordWrap="False"
+									 FontFamily="Cascadia Code,Consolas,Menlo,Monospace"
+									 >
+				<AvaloniaEdit:TextEditor.ContextFlyout>
+					<MenuFlyout>
+						<MenuItem Header="Mirror Horizontally" CommandParameter="{Binding #Editor}" Command="{Binding MirrorHorizontal}">
+							<MenuItem.Icon>
+								<PathIcon Data="{StaticResource mirror_h}"/>
+							</MenuItem.Icon>
+						</MenuItem>
+						<MenuItem Header="Mirror Vertically" CommandParameter="{Binding #Editor}" Command="{Binding MirrorVertical}">
+							<MenuItem.Icon>
+								<PathIcon Data="{StaticResource mirror_v}"/>
+							</MenuItem.Icon>
+						</MenuItem>
+						<MenuItem Header="Mirror 180°"  CommandParameter="{Binding #Editor}" Command="{Binding Mirror180}">
+							<MenuItem.Icon>
+								<PathIcon Data="{StaticResource mirror_180}"/>
+							</MenuItem.Icon>
+						</MenuItem>
+						<MenuItem Header="Rotate 45°" CommandParameter="{Binding #Editor}" Command="{Binding Turn45}">
+							<MenuItem.Icon>
+								<PathIcon Data="{StaticResource rotate_r}"/>
+							</MenuItem.Icon>
+						</MenuItem>
+						<MenuItem Header="Rotate -45°" CommandParameter="{Binding #Editor}" Command="{Binding TurnNegative45}">
+							<MenuItem.Icon>
+								<PathIcon Data="{StaticResource rotate_l}"/>
+							</MenuItem.Icon>
+						</MenuItem>
+						<Separator/>
+						<MenuItem Header="Find and Replace" PointerPressed="FindReplace_PointerPressed"/>
+					</MenuFlyout>
+				</AvaloniaEdit:TextEditor.ContextFlyout>
+			</AvaloniaEdit:TextEditor>
+
+
+			<controls:SimaiVisualizerControl Name="SimaiVisual"
+											 Height="100" Grid.Row="4" Grid.ColumnSpan="4"
+											 Time="{Binding TrackTime}" TrackIf="{Binding SongTrackInfo}"
+											 ZoomLevel="{Binding TrackZoomLevel}" SimaiChart="{Binding CurrentSimaiChart}"
+											 Offset="{Binding Offset}" CaretTime="{Binding CaretTime}" IsAnimated ="{Binding IsAnimated}"/>
+			<DockPanel Grid.Row="4" >
+				<Button Name="ZoomOut" DockPanel.Dock="Bottom" Width="30" Height="30" Margin="10">
+					<PathIcon Width="8" Data="{StaticResource zoom_out}"/>
+				</Button>
+				<Button Name="ZoomIn" DockPanel.Dock="Bottom" Width="30" Height="30" Margin="10">
+					<PathIcon Width="8" Data="{StaticResource zoom_in}"/>
+				</Button>
+			</DockPanel>
+		</Grid>
+
+		<Grid RowDefinitions="150,*" ColumnDefinitions="*,*" Margin="200" ZIndex="5" IsVisible="{Binding !IsLoaded}">
+			<Button Grid.Column="0" Grid.Row="0" Height="150" Width="150" HorizontalAlignment="Center"
+					Command="{Binding NewFile}">
+				<PathIcon Data="{StaticResource new}"/>
+			</Button>
+			<Button Grid.Column="1" Grid.Row="0" Height="150" Width="150" HorizontalAlignment="Center"
+					Command="{Binding OpenFile}">
+				<PathIcon Data="{StaticResource open}"/>
+			</Button>
+			<Label Grid.Column="0" Grid.Row="1" FontSize="20" HorizontalAlignment="Center">New</Label>
+			<Label Grid.Column="1" Grid.Row="1" FontSize="20" HorizontalAlignment="Center">Open</Label>
+			<Button IsVisible="False" HotKey="Ctrl+J" CommandParameter="{Binding #Editor}" Command="{Binding MirrorHorizontal}"/>
+			<Button IsVisible="False" HotKey="Ctrl+K" CommandParameter="{Binding #Editor}" Command="{Binding MirrorVertical}"/>
+			<Button IsVisible="False" HotKey="Ctrl+L" CommandParameter="{Binding #Editor}" Command="{Binding Mirror180}"/>
+			<Button IsVisible="False" HotKey="Ctrl+U" CommandParameter="{Binding #Editor}" Command="{Binding Turn45}"/>
+			<Button IsVisible="False" HotKey="Ctrl+I" CommandParameter="{Binding #Editor}" Command="{Binding TurnNegative45}"/>
+			<Button IsVisible="False" HotKey="Ctrl+S"  Command="{Binding SaveFile}"/>
+			<Button IsVisible="False" HotKey="Ctrl+O" Command="{Binding OpenFile}"/>
+			<Button IsVisible="False" IsEnabled="{Binding IsPlayControlEnabled}" HotKey="Ctrl+Shift+C" Command="{Binding PlayStop}" CommandParameter="{Binding #Editor}"/>
+		</Grid>
+		<DockPanel >
+			<Image DockPanel.Dock="Right"
+				   HorizontalAlignment="Right"
+				   Margin="0 0 -30 100" ZIndex="-9999"
+				   Opacity="0.5"
+				   Source="avares://MajdataEdit-Neo/Assets/xxlb.png"></Image>
+		</DockPanel>
+
+	</Panel>
 </Window>

@@ -1,10 +1,4 @@
 ﻿using System;
-using System.Collections.Generic;
-using System.IO;
-using System.Linq;
-using System.Net;
-using System.Net.Http;
-using System.Text;
 using System.Text.Json;
 using System.Text.Json.Serialization;
 using System.Threading;
@@ -16,11 +10,8 @@ using MajdataEdit_Neo.Utils;
 using Avalonia.Threading;
 using System.Collections.Concurrent;
 using MsBox.Avalonia.Enums;
-using MajSimai;
-using MajdataEdit_Neo.Views;
-using MajdataEdit_Neo.ViewModels;
-using Types.MajWs;
-using MajdataEdit_Neo.Types;
+using MajdataEdit_Neo.Types.MajWs;
+using MajdataEdit_Neo.Types.MajSetting;
 
 namespace MajdataEdit_Neo.Models;
 internal class PlayerConnection : IDisposable
@@ -122,22 +113,14 @@ internal class PlayerConnection : IDisposable
         };
         await SendAsync(req);
     }
-    public async Task SettingAsync()
+    public async Task SettingAsync(MajViewSetting viewSetting)
     {
         var req = new MajWsRequestBase()
         {
             requestType = MajWsRequestType.Setting,
             requestData = new MajWsRequestSetting()
             {
-                ViewSetting = new MajViewSetting()
-                {
-                    TapSpeed = 7.0f,
-                    TouchSpeed = 7.25f,
-                    SmoothSlideAnime = true,
-                    BackgroundDim = 0.8f,
-                    ComboStatusType = EditorComboIndicator.Combo,
-                    JudgeDisplayMode = JudgeDisplayMode.Both
-                }
+                ViewSetting = viewSetting
             }
         };
         await SendAsync(req);
@@ -165,7 +148,7 @@ internal class PlayerConnection : IDisposable
     {
         if (ViewSummary.State != ViewStatus.Loaded && ViewSummary.State != ViewStatus.Error){
             OnLoadRequired?.Invoke(this,new EventArgs());
-            //return;
+            return;
         }
         var req = new MajWsRequestBase()
         {
@@ -173,8 +156,8 @@ internal class PlayerConnection : IDisposable
             requestData = new MajWsRequestPlay()
             {
                 Mode = mode,
-                Offset = offset,
                 StartAt = startAt,
+                Offset = offset,
                 Speed = speed,
                 SimaiFumen = fumen,
                 Title = title,

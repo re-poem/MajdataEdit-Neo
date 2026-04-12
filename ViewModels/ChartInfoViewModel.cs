@@ -5,11 +5,9 @@ using CommunityToolkit.Mvvm.ComponentModel;
 using MajdataEdit_Neo.Models;
 using MajSimai;
 using System;
-using System.Collections.Generic;
 using System.Collections.ObjectModel;
 using System.Diagnostics;
 using System.IO;
-using System.Text;
 using System.Threading.Tasks;
 
 namespace MajdataEdit_Neo.ViewModels;

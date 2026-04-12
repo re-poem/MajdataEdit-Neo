@@ -2,29 +2,28 @@
 using Avalonia.Controls;
 using Avalonia.Controls.ApplicationLifetimes;
 using Avalonia.Platform.Storage;
-using CommunityToolkit.Mvvm.Input;
-using MajdataEdit_Neo.Views;
-using MajdataEdit_Neo.Models;
-using System;
-using System.Diagnostics;
-using System.IO;
-using System.Threading;
-using System.Threading.Tasks;
-using MajSimai;
-using CommunityToolkit.Mvvm.ComponentModel;
-using AvaloniaEdit.Document;
-using System.Linq;
-using System.Collections.ObjectModel;
-using MsBox.Avalonia;
-using AvaloniaEdit;
-using MsBox.Avalonia.Enums;
-using MajdataEdit_Neo.Utils;
 using Avalonia.Threading;
+using AvaloniaEdit;
+using AvaloniaEdit.Document;
+using CommunityToolkit.Mvvm.ComponentModel;
+using MajdataEdit_Neo.Models;
 using MajdataEdit_Neo.Modules.AutoSave;
 using MajdataEdit_Neo.Modules.AutoSave.Contexts;
+using MajdataEdit_Neo.Types.MajSetting;
+using MajdataEdit_Neo.Types.MajWs;
+using MajdataEdit_Neo.Views;
+using MajSimai;
+using MsBox.Avalonia;
+using MsBox.Avalonia.Enums;
+using Newtonsoft.Json;
+using System;
+using System.Collections.ObjectModel;
+using System.Diagnostics;
+using System.IO;
+using System.Linq;
 using System.Runtime.InteropServices;
-using MajdataEdit_Neo.Types;
-using Types.MajWs;
+using System.Threading;
+using System.Threading.Tasks;
 
 namespace MajdataEdit_Neo.ViewModels;
 
@@ -186,6 +185,8 @@ public partial class MainWindowViewModel : ViewModelBase
     [ObservableProperty]
     SimaiChart? currentSimaiChart = null;
     [ObservableProperty]
+    MajSetting settings;
+    [ObservableProperty]
     double caretTime = 0f;
     [ObservableProperty]
     float trackZoomLevel = 4f;
@@ -229,6 +230,7 @@ public partial class MainWindowViewModel : ViewModelBase
     IAutoSaveRecoverer _autoSaveRecoverer;
 
     const int AUTOSAVE_CONTEXT_UPDATE_INTERVAL_MS = 5000;
+    const string SETTINGS_FILENAME = "EditorSetting.json";
     public MainWindowViewModel()
     {
         PropertyChanged += MainWindowViewModel_PropertyChanged;
@@ -242,6 +244,14 @@ public partial class MainWindowViewModel : ViewModelBase
         AutoSaveManager.Initialize(_internalLocalAutoSaveContext, _internalGlobalAutoSaveContext);
         _autoSaveManager = AutoSaveManager.Instance;
         _autoSaveRecoverer = _autoSaveManager.Recoverer;
+
+        ReadSettings();
+
+        // 设计时初始化
+        if (Design.IsDesignMode)
+        {
+            CurrentSimaiFile = SimaiFile.Empty("", "");
+        }
 
         //_autoSaveManager.OnAutoSaveExecuted += OnAutoSaveExecuted;
     }
@@ -479,6 +489,24 @@ public partial class MainWindowViewModel : ViewModelBase
         OnPropertyChanged(nameof(CurrentSimaiFile));
         await EditorLoad();
     }
+    public async void OpenSettingsWindow()
+    {
+        var mainWindow = Application.Current?.ApplicationLifetime as IClassicDesktopStyleApplicationLifetime;
+        if (mainWindow is null || mainWindow.MainWindow is null) return;
+        var window = new SettingsWindow();
+        window.DataContext = new SettingsViewModel()
+        {
+            EditSetting = Settings.EditSetting,
+            ViewSetting = Settings.ViewSetting
+        };
+        await window.ShowDialog(mainWindow.MainWindow);
+        var datacontext = window.DataContext as SettingsViewModel;
+        if (datacontext is null) throw new Exception("Wtf");
+        Settings.EditSetting = datacontext.EditSetting;
+        Settings.ViewSetting = datacontext.ViewSetting;
+        SaveSettings();
+        await Task.Delay(1);
+    }
     public void MirrorHorizontal(TextEditor editor)
     {
         editor.SelectedText = SimaiMirror.HandleMirror(editor.SelectedText, SimaiMirror.HandleType.LRMirror);
@@ -524,8 +552,8 @@ public partial class MainWindowViewModel : ViewModelBase
             shouldRecoverPlayControl = false;
             playStartTime = TrackTime;
             _textEditor = textEditor;
-            await _playerConnection.SettingAsync();
-            await _playerConnection.ParseAndPlayAsync(PlaybackMode.Normal, TrackTime, Offset, 1, 
+            await _playerConnection.SettingAsync(Settings.ViewSetting);
+            await _playerConnection.ParseAndPlayAsync(PlaybackMode.Normal, playStartTime, Offset, 1, 
                 CurrentSimaiFile.RawCharts[SelectedDifficulty], 
                 CurrentSimaiFile.Title, CurrentSimaiFile.Artist, SelectedDifficulty);
         }
@@ -561,8 +589,8 @@ public partial class MainWindowViewModel : ViewModelBase
             shouldRecoverPlayControl = false;
             playStartTime = TrackTime;
             _textEditor = textEditor;
-            await _playerConnection.SettingAsync();
-            await _playerConnection.ParseAndPlayAsync(PlaybackMode.Normal, TrackTime, Offset, 1,
+            await _playerConnection.SettingAsync(Settings.ViewSetting);
+            await _playerConnection.ParseAndPlayAsync(PlaybackMode.Normal, TrackTime, CaretTime, 1,
                 CurrentSimaiFile.RawCharts[SelectedDifficulty],
                 CurrentSimaiFile.Title, CurrentSimaiFile.Artist, SelectedDifficulty);
         }
@@ -572,7 +600,57 @@ public partial class MainWindowViewModel : ViewModelBase
                 IsPlayControlEnabled = true;
         }
     }
-    
+
+    public async void PlayIncludeOp(TextEditor textEditor)
+    {
+        bool shouldRecoverPlayControl = true;
+        try
+        {
+            IsPlayControlEnabled = false;
+            if (!await CheckPlayerConnectionAndReconnect(true))
+            {
+                return;
+            }
+            shouldRecoverPlayControl = false;
+            playStartTime = TrackTime;
+            _textEditor = textEditor;
+            await _playerConnection.SettingAsync(Settings.ViewSetting);
+            await _playerConnection.ParseAndPlayAsync(PlaybackMode.IncludeOp, TrackTime, CaretTime, 1,
+                CurrentSimaiFile.RawCharts[SelectedDifficulty],
+                CurrentSimaiFile.Title, CurrentSimaiFile.Artist, SelectedDifficulty);
+        }
+        finally
+        {
+            if (shouldRecoverPlayControl)
+                IsPlayControlEnabled = true;
+        }
+    }
+
+    public async void PlayRecord(TextEditor textEditor)
+    {
+        bool shouldRecoverPlayControl = true;
+        try
+        {
+            IsPlayControlEnabled = false;
+            if (!await CheckPlayerConnectionAndReconnect(true))
+            {
+                return;
+            }
+            shouldRecoverPlayControl = false;
+            playStartTime = TrackTime;
+            _textEditor = textEditor;
+            await _playerConnection.SettingAsync(Settings.ViewSetting);
+            await _playerConnection.ParseAndPlayAsync(PlaybackMode.Record, TrackTime, CaretTime, 1,
+                CurrentSimaiFile.RawCharts[SelectedDifficulty],
+                CurrentSimaiFile.Title, CurrentSimaiFile.Artist, SelectedDifficulty);
+        }
+        finally
+        {
+            if (shouldRecoverPlayControl)
+                IsPlayControlEnabled = true;
+        }
+    }
+
     private async void _playerConnection_OnPlayStarted(object sender, MajWsResponseType e)
     {
         IsPlayControlEnabled = true;
@@ -778,6 +856,53 @@ public partial class MainWindowViewModel : ViewModelBase
             Process.Start("open", url); // Not tested
         }
     }
+
+    private void CreateSettings()
+    {
+        Settings = new MajSetting()
+        {
+            EditSetting = new MajEditSetting()
+            {
+                Language = "zh-CN",
+                FontSize = 14,
+                AutoCheckUpdatesOnStartup = true,
+            },
+            ViewSetting = new MajViewSetting()
+            {
+                TapSpeed = 7.5f,
+                TouchSpeed = 7.5f,
+                SmoothSlideAnime = true,
+                BackgroundDim = 0.6f,
+                ComboStatusType = EditorComboIndicator.Combo,
+                JudgeDisplayMode = JudgeDisplayMode.Both
+            }
+        };
+        File.WriteAllText(SETTINGS_FILENAME, JsonConvert.SerializeObject(Settings, Newtonsoft.Json.Formatting.Indented));
+
+        new SettingsWindow().Show();
+    }
+
+    private void ReadSettings()
+    {
+        if (!File.Exists(SETTINGS_FILENAME)) CreateSettings();
+        var json = File.ReadAllText(SETTINGS_FILENAME);
+        Settings = JsonConvert.DeserializeObject<MajSetting>(json)!;
+
+        //LocalizeDictionary.Instance.Culture = new CultureInfo(Settings.EditSetting.Language);
+
+        //_textEditor.FontSize = Settings.EditSetting.FontSize;
+
+        SaveSettings(); // 覆盖旧版本setting
+    }
+
+    private void SaveSettings()
+    {
+        File.WriteAllText(SETTINGS_FILENAME, JsonConvert.SerializeObject(Settings, Newtonsoft.Json.Formatting.Indented));
+    }
+
+
+
+
     class InternalAutoSaveContext : IAutoSaveContext, IAutoSaveContentProvider<string>
     {
         public string WorkingPath { get; set; } = Path.Combine(Environment.CurrentDirectory, ".autosave");

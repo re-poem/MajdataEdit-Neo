@@ -1,9 +1,8 @@
-using MajdataEdit_Neo.Types;
+using MajdataEdit_Neo.Types.MajSetting;
 
-namespace Types.MajWs
+namespace MajdataEdit_Neo.Types.MajWs;
+
+internal readonly struct MajWsRequestSetting
 {
-    internal readonly struct MajWsRequestSetting
-    {
-        public MajViewSetting ViewSetting { get; init; }
-    }
+    public MajViewSetting ViewSetting { get; init; }
 }

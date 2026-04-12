@@ -1,0 +1,49 @@
+<Window xmlns="https://github.com/avaloniaui"
+		xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+		xmlns:vm="using:MajdataEdit_Neo.ViewModels"
+		xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
+		xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
+		xmlns:local="using:MajdataEdit_Neo.Views"
+		mc:Ignorable="d" d:DesignWidth="800" d:DesignHeight="450"
+		x:Class="MajdataEdit_Neo.Views.SettingsWindow"
+		x:DataType="vm:SettingsViewModel"
+		TransparencyLevelHint="AcrylicBlur"
+		Background="Transparent"
+		Title="SettingsWindow">
+	<Design.DataContext>
+		<!-- This only sets the DataContext for the previewer in an IDE,
+		to set the actual DataContext for runtime, set the DataContext property in code (look at App.axaml.cs) -->
+		<vm:ChartInfoViewModel/>
+	</Design.DataContext>
+	<Window.Resources>
+		<local:SettingTemplateSelector x:Key="SettingTemplateSelector" />
+	</Window.Resources>
+	<StackPanel Margin="15">
+		<ItemsControl ItemsSource="{Binding EditSettingItems}">
+            <ItemsControl.ItemTemplate>
+                <DataTemplate x:DataType="vm:SettingItem">
+                    <StackPanel Orientation="Horizontal" Margin="0,5" Spacing="10">
+                        <Label Content="{Binding DisplayName}" Width="150" VerticalAlignment="Center"/>
+                        
+                        <!-- 动态根据类型切换控件 -->
+                        <ContentControl Content="{Binding}" 
+                                        ContentTemplate="{StaticResource SettingTemplateSelector}" />
+                    </StackPanel>
+                </DataTemplate>
+            </ItemsControl.ItemTemplate>
+        </ItemsControl>
+				<ItemsControl ItemsSource="{Binding ViewSettingItems}">
+            <ItemsControl.ItemTemplate>
+                <DataTemplate x:DataType="vm:SettingItem">
+                    <StackPanel Orientation="Horizontal" Margin="0,5" Spacing="10">
+                        <Label Content="{Binding DisplayName}" Width="150" VerticalAlignment="Center"/>
+                        
+                        <!-- 动态根据类型切换控件 -->
+                        <ContentControl Content="{Binding}" 
+                                        ContentTemplate="{StaticResource SettingTemplateSelector}" />
+                    </StackPanel>
+                </DataTemplate>
+            </ItemsControl.ItemTemplate>
+        </ItemsControl>
+	</StackPanel>
+</Window>

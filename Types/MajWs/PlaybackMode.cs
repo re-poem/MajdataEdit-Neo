@@ -1,15 +1,8 @@
-﻿using System;
-using System.Collections.Generic;
-using System.Linq;
-using System.Text;
-using System.Threading.Tasks;
+﻿namespace MajdataEdit_Neo.Types.MajWs;
 
-namespace Types.MajWs
+internal enum PlaybackMode
 {
-    internal enum PlaybackMode
-    {
-        Normal,
-        IncludeOp,
-        Record
-    }
+    Normal,
+    IncludeOp,
+    Record
 }

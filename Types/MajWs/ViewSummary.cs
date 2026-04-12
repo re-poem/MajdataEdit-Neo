@@ -1,15 +1,8 @@
-﻿using System;
-using System.Collections.Generic;
-using System.Linq;
-using System.Text;
-using System.Threading.Tasks;
+﻿namespace MajdataEdit_Neo.Types.MajWs;
 
-namespace Types.MajWs
+internal struct ViewSummary
 {
-    internal struct ViewSummary
-    {
-        public ViewStatus State { get; init; }
-        public string ErrMsg { get; init; }
-        public float Timeline { get; init; }
-    }
+    public ViewStatus State { get; init; }
+    public string ErrMsg { get; init; }
+    public float Timeline { get; init; }
 }
