@@ -1,10 +1,5 @@
 ﻿using System;
-using System.Collections.Generic;
-using System.Diagnostics;
 using System.IO;
-using System.Linq;
-using System.Text;
-using System.Threading.Tasks;
 using ManagedBass;
 
 namespace MajdataEdit_Neo.Models;
@@ -13,7 +8,7 @@ class TrackReader : IDisposable
 {
     public TrackReader()
     {
-        Bass.Init();
+        Bass.Init(Bass.NoSoundDevice);
     }
 
     public void Dispose()

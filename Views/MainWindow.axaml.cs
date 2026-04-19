@@ -1,17 +1,9 @@
-using Avalonia;
 using Avalonia.Controls;
-using Avalonia.Data;
 using Avalonia.Interactivity;
-using Avalonia.Platform.Storage;
 using AvaloniaEdit;
-using AvaloniaEdit.Editing;
 using AvaloniaEdit.TextMate;
 using MajdataEdit_Neo.Controls;
-using MajdataEdit_Neo.Models;
 using MajdataEdit_Neo.ViewModels;
-using System;
-using System.Diagnostics;
-using System.IO;
 using System.Threading.Tasks;
 using TextMateSharp.Grammars;
 using TextMateSharp.Registry;

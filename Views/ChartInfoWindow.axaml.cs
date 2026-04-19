@@ -1,7 +1,4 @@
-using Avalonia;
 using Avalonia.Controls;
-using Avalonia.Markup.Xaml;
-using MajdataEdit_Neo.ViewModels;
 
 namespace MajdataEdit_Neo.Views;
 

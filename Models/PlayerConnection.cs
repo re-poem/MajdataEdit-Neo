@@ -1,22 +1,18 @@
 ﻿using System;
-using System.Collections.Generic;
-using System.IO;
-using System.Linq;
-using System.Net;
-using System.Net.Http;
-using System.Text;
 using System.Text.Json;
 using System.Text.Json.Serialization;
 using System.Threading;
 using System.Threading.Tasks;
 using WebSocketSharp;
-using MajdataPlay.View.Types;
 using ErrorEventArgs = WebSocketSharp.ErrorEventArgs;
 using System.Diagnostics;
 using MajdataEdit_Neo.Utils;
 using Avalonia.Threading;
 using System.Collections.Concurrent;
 using MsBox.Avalonia.Enums;
+using MajdataEdit_Neo.Types.MajWs;
+using MajdataEdit_Neo.Types.MajSetting;
+using MajSimai;
 
 namespace MajdataEdit_Neo.Models;
 internal class PlayerConnection : IDisposable
@@ -101,22 +97,6 @@ internal class PlayerConnection : IDisposable
     {
         Debug.WriteLine(args);
     }
-/*    public async Task LoadAsync(byte[] track,
-                                       byte[] cover,
-                                       byte[] mv)
-    {
-        var req = new MajWsRequestBase()
-        {
-            requestType = MajWsRequestType.Load,
-            requestData = new MajWsRequestLoadBinary()
-            {
-                Image = cover,
-                Track = track,
-                Video = mv
-            }
-        };
-        await SendAsync(req);
-    }*/
     public async Task LoadAsync(string trackPath,
                                        string coverPath,
                                        string mvPath)
@@ -134,12 +114,15 @@ internal class PlayerConnection : IDisposable
         };
         await SendAsync(req);
     }
-    public async Task ResetAsync()
+    public async Task SettingAsync(MajViewSetting viewSetting)
     {
         var req = new MajWsRequestBase()
         {
-            requestType = MajWsRequestType.Reset,
-            requestData = null
+            requestType = MajWsRequestType.Setting,
+            requestData = new MajWsRequestSetting()
+            {
+                ViewSetting = viewSetting
+            }
         };
         await SendAsync(req);
     }
@@ -161,21 +144,45 @@ internal class PlayerConnection : IDisposable
         };
         await SendAsync(req);
     }
-    public async Task ParseAndPlayAsync(double startAt, double offset, string fumen,float speed=1)
+    public async Task ParseAndPlayAsync(PlaybackMode mode, 
+        double startAt, float speed, 
+        string title, string artist, float offset, 
+        string designer, string level, string fumen, 
+        SimaiCommand[] commands, int difficulty, string? maidataPath = null)
     {
-        if (ViewSummary.State != ViewStatus.Loaded && ViewSummary.State != ViewStatus.Error){
-            OnLoadRequired?.Invoke(this,new EventArgs());
-            return;
+        if (ViewSummary.State == ViewStatus.Error) return;
+        
+        if (ViewSummary.State != ViewStatus.Loaded)
+        {
+            //if busy, wait
+            if (ViewSummary.State == ViewStatus.Busy)
+                while (ViewSummary.State == ViewStatus.Busy) 
+                    await Task.Yield();
+            else
+            {
+                OnLoadRequired?.Invoke(this, new EventArgs());
+                return;
+            }
         }
+        
+
         var req = new MajWsRequestBase()
         {
             requestType = MajWsRequestType.Play,
             requestData = new MajWsRequestPlay()
             {
-                Offset = offset,
-                SimaiFumen = fumen,
+                Mode = mode,
                 StartAt = startAt,
-                Speed = speed
+                Speed = speed,
+                Title = title,
+                Artist = artist,
+                Offset = offset,
+                Designer = designer,
+                Level = level,
+                Fumen = fumen,
+                Commands = commands,
+                Difficulty = difficulty,
+                MaidataPath = maidataPath
             }
         };
         await SendAsync(req);
