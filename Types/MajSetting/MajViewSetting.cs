@@ -2,12 +2,14 @@
 
 public class MajViewSetting
 {
-    public float TapSpeed { get; set; }
-    public float TouchSpeed { get; set; }
-    public bool SmoothSlideAnime { get; set; }
-    public float BackgroundDim { get; set; }
-    public EditorComboIndicator ComboStatusType { get; set; }
-    public JudgeDisplayMode JudgeDisplayMode { get; set; }
+    public float TapSpeed { get; set; } = 7.5f;
+    public float TouchSpeed { get; set; } = 7.5f;
+    public bool SmoothSlideAnime { get; set; } = true;
+    public float BackgroundDim { get; set; } = 0.7f;
+    public EditorComboIndicator ComboStatusType { get; set; } = EditorComboIndicator.Combo;
+    public JudgeDisplayMode JudgeDisplayMode { get; set; } = JudgeDisplayMode.Both;
+    public AutoPlayMode AutoMode { get; set; } = AutoPlayMode.Enable;
+    public int OutputFps { get; set; } = 60;
 }
 
 public enum EditorComboIndicator
@@ -28,12 +30,4 @@ public enum EditorComboIndicator
     CScoreDedeluxe = 101,
     CScoreDownDedeluxe,
     MAX
-}
-
-public enum JudgeDisplayMode
-{
-    None,
-    FastLate,
-    Level,
-    Both
 }

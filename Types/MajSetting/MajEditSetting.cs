@@ -1,8 +1,11 @@
-﻿namespace MajdataEdit_Neo.Types.MajSetting;
+﻿using System.ComponentModel.DataAnnotations;
+
+namespace MajdataEdit_Neo.Types.MajSetting;
 
 public class MajEditSetting
 {
-    public string Language { get; set; }
-    public float FontSize { get; set; }
-    public bool AutoCheckUpdatesOnStartup { get; set; }
+    [Display(Name = "yuyan")]
+    public string Language { get; set; } = "en-US";
+    public float FontSize { get; set; } = 14f;
+    public bool AutoCheckUpdatesOnStartup { get; set; } = true;
 }

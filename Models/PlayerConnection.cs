@@ -12,6 +12,7 @@ using System.Collections.Concurrent;
 using MsBox.Avalonia.Enums;
 using MajdataEdit_Neo.Types.MajWs;
 using MajdataEdit_Neo.Types.MajSetting;
+using MajSimai;
 
 namespace MajdataEdit_Neo.Models;
 internal class PlayerConnection : IDisposable
@@ -143,13 +144,28 @@ internal class PlayerConnection : IDisposable
         };
         await SendAsync(req);
     }
-    public async Task ParseAndPlayAsync(PlaybackMode mode, double startAt, double offset, float speed, 
-        string fumen, string title, string artist, int difficulty, string? maidataPath = null)
+    public async Task ParseAndPlayAsync(PlaybackMode mode, 
+        double startAt, float speed, 
+        string title, string artist, float offset, 
+        string designer, string level, string fumen, 
+        SimaiCommand[] commands, int difficulty, string? maidataPath = null)
     {
-        if (ViewSummary.State != ViewStatus.Loaded && ViewSummary.State != ViewStatus.Error){
-            OnLoadRequired?.Invoke(this,new EventArgs());
-            return;
+        if (ViewSummary.State == ViewStatus.Error) return;
+        
+        if (ViewSummary.State != ViewStatus.Loaded)
+        {
+            //if busy, wait
+            if (ViewSummary.State == ViewStatus.Busy)
+                while (ViewSummary.State == ViewStatus.Busy) 
+                    await Task.Yield();
+            else
+            {
+                OnLoadRequired?.Invoke(this, new EventArgs());
+                return;
+            }
         }
+        
+
         var req = new MajWsRequestBase()
         {
             requestType = MajWsRequestType.Play,
@@ -157,11 +173,14 @@ internal class PlayerConnection : IDisposable
             {
                 Mode = mode,
                 StartAt = startAt,
-                Offset = offset,
                 Speed = speed,
-                SimaiFumen = fumen,
                 Title = title,
                 Artist = artist,
+                Offset = offset,
+                Designer = designer,
+                Level = level,
+                Fumen = fumen,
+                Commands = commands,
                 Difficulty = difficulty,
                 MaidataPath = maidataPath
             }

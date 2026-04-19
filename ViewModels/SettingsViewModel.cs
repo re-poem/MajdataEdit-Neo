@@ -57,8 +57,8 @@ public partial class SettingItem : ObservableObject
     private readonly object _owner;
     private readonly PropertyInfo _prop;
 
-    public string Name { get; }         // 原始属性名 (如 "FontSize")
-    public string DisplayName { get; }  // 显示名称 (如 "字体大小")
+    public string Name { get; }
+    public string DisplayName { get; }
     public Type PropertyType { get; }
 
     public SettingItem(object owner, PropertyInfo prop)

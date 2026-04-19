@@ -285,7 +285,7 @@ public partial class MainWindowViewModel : ViewModelBase
         var time = TrackTime - delta * 0.2 * TrackZoomLevel;
         if (time < 0) time = 0;
         else if (time > SongTrackInfo.Length) time = SongTrackInfo.Length;
-        if(_playerConnection.IsConnected)
+        if(_playerConnection.ViewSummary.State == ViewStatus.Playing)
         {
             Stop(false);
         }
@@ -553,9 +553,10 @@ public partial class MainWindowViewModel : ViewModelBase
             playStartTime = TrackTime;
             _textEditor = textEditor;
             await _playerConnection.SettingAsync(Settings.ViewSetting);
-            await _playerConnection.ParseAndPlayAsync(PlaybackMode.Normal, playStartTime, Offset, 1, 
-                CurrentSimaiFile.RawCharts[SelectedDifficulty], 
-                CurrentSimaiFile.Title, CurrentSimaiFile.Artist, SelectedDifficulty);
+            await _playerConnection.ParseAndPlayAsync(PlaybackMode.Normal, playStartTime, 1, 
+                CurrentSimaiFile!.Title, CurrentSimaiFile!.Artist, Offset, 
+                Designer, Level, CurrentSimaiFile.RawCharts[SelectedDifficulty], 
+                CurrentSimaiFile.Commands, SelectedDifficulty);
         }
         finally
         {
@@ -590,9 +591,10 @@ public partial class MainWindowViewModel : ViewModelBase
             playStartTime = TrackTime;
             _textEditor = textEditor;
             await _playerConnection.SettingAsync(Settings.ViewSetting);
-            await _playerConnection.ParseAndPlayAsync(PlaybackMode.Normal, TrackTime, CaretTime, 1,
-                CurrentSimaiFile.RawCharts[SelectedDifficulty],
-                CurrentSimaiFile.Title, CurrentSimaiFile.Artist, SelectedDifficulty);
+            await _playerConnection.ParseAndPlayAsync(PlaybackMode.Normal, playStartTime, 1,
+                CurrentSimaiFile!.Title, CurrentSimaiFile!.Artist, Offset,
+                Designer, Level, CurrentSimaiFile.RawCharts[SelectedDifficulty],
+                CurrentSimaiFile.Commands, SelectedDifficulty);
         }
         finally
         {
@@ -603,7 +605,6 @@ public partial class MainWindowViewModel : ViewModelBase
 
     public async void PlayIncludeOp(TextEditor textEditor)
     {
-        bool shouldRecoverPlayControl = true;
         try
         {
             IsPlayControlEnabled = false;
@@ -611,24 +612,23 @@ public partial class MainWindowViewModel : ViewModelBase
             {
                 return;
             }
-            shouldRecoverPlayControl = false;
+            TrackTime = 0;
             playStartTime = TrackTime;
             _textEditor = textEditor;
             await _playerConnection.SettingAsync(Settings.ViewSetting);
-            await _playerConnection.ParseAndPlayAsync(PlaybackMode.IncludeOp, TrackTime, CaretTime, 1,
-                CurrentSimaiFile.RawCharts[SelectedDifficulty],
-                CurrentSimaiFile.Title, CurrentSimaiFile.Artist, SelectedDifficulty);
+            await _playerConnection.ParseAndPlayAsync(PlaybackMode.IncludeOp, playStartTime, 1,
+                CurrentSimaiFile!.Title, CurrentSimaiFile!.Artist, Offset,
+                Designer, Level, CurrentSimaiFile.RawCharts[SelectedDifficulty],
+                CurrentSimaiFile.Commands, SelectedDifficulty);
         }
         finally
         {
-            if (shouldRecoverPlayControl)
-                IsPlayControlEnabled = true;
+            IsPlayControlEnabled = true;
         }
     }
 
     public async void PlayRecord(TextEditor textEditor)
     {
-        bool shouldRecoverPlayControl = true;
         try
         {
             IsPlayControlEnabled = false;
@@ -636,18 +636,18 @@ public partial class MainWindowViewModel : ViewModelBase
             {
                 return;
             }
-            shouldRecoverPlayControl = false;
+            TrackTime = 0;
             playStartTime = TrackTime;
             _textEditor = textEditor;
             await _playerConnection.SettingAsync(Settings.ViewSetting);
-            await _playerConnection.ParseAndPlayAsync(PlaybackMode.Record, TrackTime, CaretTime, 1,
-                CurrentSimaiFile.RawCharts[SelectedDifficulty],
-                CurrentSimaiFile.Title, CurrentSimaiFile.Artist, SelectedDifficulty);
+            await _playerConnection.ParseAndPlayAsync(PlaybackMode.Record, playStartTime, 1,
+                CurrentSimaiFile!.Title, CurrentSimaiFile!.Artist, Offset,
+                Designer, Level, CurrentSimaiFile.RawCharts[SelectedDifficulty],
+                CurrentSimaiFile.Commands, SelectedDifficulty, _maidataDir);
         }
         finally
         {
-            if (shouldRecoverPlayControl)
-                IsPlayControlEnabled = true;
+            IsPlayControlEnabled = true;
         }
     }
 
@@ -710,7 +710,6 @@ public partial class MainWindowViewModel : ViewModelBase
                     return;
             }
             await _playerConnection.StopAsync();
-            
         }
         finally
         {
@@ -859,27 +858,10 @@ public partial class MainWindowViewModel : ViewModelBase
 
     private void CreateSettings()
     {
-        Settings = new MajSetting()
-        {
-            EditSetting = new MajEditSetting()
-            {
-                Language = "zh-CN",
-                FontSize = 14,
-                AutoCheckUpdatesOnStartup = true,
-            },
-            ViewSetting = new MajViewSetting()
-            {
-                TapSpeed = 7.5f,
-                TouchSpeed = 7.5f,
-                SmoothSlideAnime = true,
-                BackgroundDim = 0.6f,
-                ComboStatusType = EditorComboIndicator.Combo,
-                JudgeDisplayMode = JudgeDisplayMode.Both
-            }
-        };
+        Settings = new MajSetting();
         File.WriteAllText(SETTINGS_FILENAME, JsonConvert.SerializeObject(Settings, Newtonsoft.Json.Formatting.Indented));
 
-        new SettingsWindow().Show();
+        OpenSettingsWindow();
     }
 
     private void ReadSettings()

@@ -88,7 +88,7 @@
 					<MenuItem Header="Find and Replace" PointerPressed="FindReplace_PointerPressed"/>
 				</MenuItem>
 				<MenuItem Header="_Setting">
-					<MenuItem Header="View Setting" Command="{Binding OpenSettingsWindow}"/>
+					<MenuItem Header="Setting" Command="{Binding OpenSettingsWindow}"/>
 				</MenuItem>
 				<MenuItem Header="_Tools">
 					<MenuItem Header="BPM Tap" Command="{Binding OpenBpmTapWindow}"/>

@@ -2,6 +2,6 @@
 
 public class MajSetting
 {
-    public MajEditSetting EditSetting { get; set; }
-    public MajViewSetting ViewSetting { get; set; }
+    public MajEditSetting EditSetting { get; set; } = new();
+    public MajViewSetting ViewSetting { get; set; } = new();
 }
