@@ -1,9 +1,11 @@
 <Window xmlns="https://github.com/avaloniaui"
 		xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
-		xmlns:vm="using:MajdataEdit_Neo.ViewModels"
 		xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
 		xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
+		xmlns:vm="using:MajdataEdit_Neo.ViewModels"
+        xmlns:attr="using:MajdataEdit_Neo.Types.Attributes"
 		xmlns:local="using:MajdataEdit_Neo.Views"
+		xmlns:m="using:MajdataEdit_Neo"
 		mc:Ignorable="d" d:DesignWidth="800" d:DesignHeight="450"
 		x:Class="MajdataEdit_Neo.Views.SettingsWindow"
 		x:DataType="vm:SettingsViewModel"
@@ -14,37 +16,79 @@
 	<Design.DataContext>
 		<!-- This only sets the DataContext for the previewer in an IDE,
 		to set the actual DataContext for runtime, set the DataContext property in code (look at App.axaml.cs) -->
-		<vm:ChartInfoViewModel/>
+		<vm:SettingsViewModel/>
 	</Design.DataContext>
-	<Window.Resources>
-		<local:SettingTemplateSelector x:Key="SettingTemplateSelector" />
-	</Window.Resources>
-	<StackPanel Margin="15">
-		<ItemsControl ItemsSource="{Binding EditSettingItems}">
+    <Window.Resources>
+        <local:SettingTemplateSelector x:Key="MySelector">
+
+            <DataTemplate x:Key="Default" DataType="vm:SettingItem">
+                <TextBox Text="{Binding Value, Mode=TwoWay}" Width="150" HorizontalAlignment="Left"/>
+            </DataTemplate>
+
+            <DataTemplate x:Key="Toggle" DataType="vm:SettingItem">
+                <ToggleSwitch IsChecked="{Binding Value, Mode=TwoWay}" />
+            </DataTemplate>
+
+            <DataTemplate x:Key="Numeric" DataType="vm:SettingItem">
+                <NumericUpDown Value="{Binding Value, Mode=TwoWay}" 
+                               Minimum="{Binding Min}" 
+                               Maximum="{Binding Max}" 
+                               Increment="{Binding Step}" />
+            </DataTemplate>
+
+            <DataTemplate x:Key="Slider" DataType="vm:SettingItem">
+                <DockPanel LastChildFill="True">
+                    <TextBlock Text="{Binding Value, StringFormat=\{0:F2\}}" DockPanel.Dock="Right" Width="40" Margin="5,0"/>
+                    <Slider Value="{Binding Value, Mode=TwoWay}" 
+                            Minimum="{Binding Min}" 
+                            Maximum="{Binding Max}" 
+                            TickFrequency="{Binding Step}"
+                            IsSnapToTickEnabled="True"
+                            SmallChange="{Binding Step}" />
+                </DockPanel>
+            </DataTemplate>
+
+            <DataTemplate x:Key="Selection" DataType="vm:SettingItem">
+                <ComboBox ItemsSource="{Binding SelectionValues}" 
+                          SelectedValue="{Binding Value, Mode=TwoWay}" 
+                          SelectedValueBinding="{Binding Value}"
+                          Width="200">
+                    <ComboBox.ItemTemplate>
+                        <DataTemplate>
+                            <TextBlock Text="{Binding Label}"/>
+                        </DataTemplate>
+                    </ComboBox.ItemTemplate>
+                </ComboBox>
+            </DataTemplate>
+        </local:SettingTemplateSelector>
+    </Window.Resources>
+
+    <ScrollViewer HorizontalScrollBarVisibility="Auto" VerticalScrollBarVisibility="Disabled" >
+        <ItemsControl ItemsSource="{Binding Categories}">
+            <ItemsControl.ItemsPanel>
+                <ItemsPanelTemplate>
+                    <StackPanel Orientation="Horizontal" Spacing="30" Margin="20"/>
+                </ItemsPanelTemplate>
+            </ItemsControl.ItemsPanel>
+
             <ItemsControl.ItemTemplate>
-                <DataTemplate x:DataType="vm:SettingItem">
-                    <StackPanel Orientation="Horizontal" Margin="0,5" Spacing="10">
-                        <Label Content="{Binding DisplayName}" Width="150" VerticalAlignment="Center"/>
-                        
-                        <!-- 动态根据类型切换控件 -->
-                        <ContentControl Content="{Binding}" 
-                                        ContentTemplate="{StaticResource SettingTemplateSelector}" />
+                <DataTemplate>
+                    <StackPanel Width="250">
+                        <TextBlock Text="{m:I18N {Binding Title}}" FontSize="18" FontWeight="Bold" Margin="0,0,0,10"/>
+
+                        <ItemsControl ItemsSource="{Binding Items}">
+                            <ItemsControl.ItemTemplate>
+                                <DataTemplate>
+                                    <StackPanel Margin="0,8">
+                                        <TextBlock Text="{m:I18N {Binding DisplayName}}" Margin="0,0,0,4" FontSize="15" Foreground="AntiqueWhite"/>
+                                        <ContentControl Content="{Binding}" ContentTemplate="{StaticResource MySelector}"/>
+                                    </StackPanel>
+                                </DataTemplate>
+                            </ItemsControl.ItemTemplate>
+                        </ItemsControl>
                     </StackPanel>
                 </DataTemplate>
             </ItemsControl.ItemTemplate>
         </ItemsControl>
-				<ItemsControl ItemsSource="{Binding ViewSettingItems}">
-            <ItemsControl.ItemTemplate>
-                <DataTemplate x:DataType="vm:SettingItem">
-                    <StackPanel Orientation="Horizontal" Margin="0,5" Spacing="10">
-                        <Label Content="{Binding DisplayName}" Width="150" VerticalAlignment="Center"/>
-                        
-                        <!-- 动态根据类型切换控件 -->
-                        <ContentControl Content="{Binding}" 
-                                        ContentTemplate="{StaticResource SettingTemplateSelector}" />
-                    </StackPanel>
-                </DataTemplate>
-            </ItemsControl.ItemTemplate>
-        </ItemsControl>
-	</StackPanel>
+    </ScrollViewer>
 </Window>

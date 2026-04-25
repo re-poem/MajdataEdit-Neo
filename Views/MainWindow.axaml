@@ -5,6 +5,7 @@
 		xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
 		xmlns:AvaloniaEdit="clr-namespace:AvaloniaEdit;assembly=AvaloniaEdit"
 		xmlns:controls="clr-namespace:MajdataEdit_Neo.Controls"
+		xmlns:m="clr-namespace:MajdataEdit_Neo"
 		mc:Ignorable="d" d:DesignWidth="750" d:DesignHeight="600"
 		MinHeight="600"
 		MinWidth="750"
@@ -107,7 +108,7 @@
 						Margin="6 0 0 0" Width="116">
 				<Label Height="90" Name="Time" FontSize="40" HorizontalAlignment="Center" VerticalAlignment="Center"
 					   Content="{Binding DisplayTime}" Padding="0 30 0 0"/>
-				<Label VerticalAlignment="Center">Difficulty</Label>
+				<Label VerticalAlignment="Center" Content="{m:I18N Gui_Difficulty}"/>			
 				<ComboBox Name="Difficulty"
 						  Width="116" VerticalAlignment="Center"
 						  SelectedIndex="{Binding SelectedDifficulty}">

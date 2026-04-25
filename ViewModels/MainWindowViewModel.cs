@@ -1,14 +1,17 @@
 ﻿using Avalonia;
 using Avalonia.Controls;
 using Avalonia.Controls.ApplicationLifetimes;
+using Avalonia.Markup.Xaml.MarkupExtensions;
 using Avalonia.Platform.Storage;
 using Avalonia.Threading;
 using AvaloniaEdit;
 using AvaloniaEdit.Document;
 using CommunityToolkit.Mvvm.ComponentModel;
+using DiscordRPC;
 using MajdataEdit_Neo.Models;
 using MajdataEdit_Neo.Modules.AutoSave;
 using MajdataEdit_Neo.Modules.AutoSave.Contexts;
+using MajdataEdit_Neo.Types;
 using MajdataEdit_Neo.Types.MajSetting;
 using MajdataEdit_Neo.Types.MajWs;
 using MajdataEdit_Neo.Views;
@@ -19,27 +22,12 @@ using Newtonsoft.Json;
 using System;
 using System.Collections.ObjectModel;
 using System.Diagnostics;
+using System.Globalization;
 using System.IO;
 using System.Linq;
 using System.Runtime.InteropServices;
 using System.Threading;
 using System.Threading.Tasks;
-using MajSimai;
-using CommunityToolkit.Mvvm.ComponentModel;
-using AvaloniaEdit.Document;
-using System.Linq;
-using System.Collections.ObjectModel;
-using MsBox.Avalonia;
-using AvaloniaEdit;
-using MsBox.Avalonia.Enums;
-using MajdataPlay.View.Types;
-using MajdataEdit_Neo.Utils;
-using Avalonia.Threading;
-using MajdataEdit_Neo.Modules.AutoSave;
-using MajdataEdit_Neo.Modules.AutoSave.Contexts;
-using System.Runtime.InteropServices;
-using MajdataEdit_Neo.Types;
-using DiscordRPC;
 
 namespace MajdataEdit_Neo.ViewModels;
 
@@ -237,7 +225,7 @@ public partial class MainWindowViewModel : ViewModelBase
     {
         Details = "Nothing to do",
         State = "",
-        Assets = new Assets
+        Assets = new DiscordRPC.Assets
         {
             LargeImageKey = "salt",
             LargeImageText = "Majdata",
@@ -522,17 +510,14 @@ public partial class MainWindowViewModel : ViewModelBase
     {
         var mainWindow = Application.Current?.ApplicationLifetime as IClassicDesktopStyleApplicationLifetime;
         if (mainWindow is null || mainWindow.MainWindow is null) return;
-        var window = new SettingsWindow();
-        window.DataContext = new SettingsViewModel()
+
+        var settingsViewModel = new SettingsViewModel();
+        settingsViewModel.LoadSettings(Settings);
+        var window = new SettingsWindow
         {
-            EditSetting = Settings.EditSetting,
-            ViewSetting = Settings.ViewSetting
+            DataContext = settingsViewModel
         };
         await window.ShowDialog(mainWindow.MainWindow);
-        var datacontext = window.DataContext as SettingsViewModel;
-        if (datacontext is null) throw new Exception("Wtf");
-        Settings.EditSetting = datacontext.EditSetting;
-        Settings.ViewSetting = datacontext.ViewSetting;
         SaveSettings();
         await Task.Delay(1);
     }
@@ -581,7 +566,7 @@ public partial class MainWindowViewModel : ViewModelBase
             shouldRecoverPlayControl = false;
             playStartTime = TrackTime;
             _textEditor = textEditor;
-            await _playerConnection.SettingAsync(Settings.ViewSetting);
+            await _playerConnection.SettingAsync(Settings.ViewSetting, Settings.VolumeSetting);
             await _playerConnection.ParseAndPlayAsync(PlaybackMode.Normal, playStartTime, 1, 
                 CurrentSimaiFile!.Title, CurrentSimaiFile!.Artist, Offset, 
                 Designer, Level, CurrentSimaiFile.RawCharts[SelectedDifficulty], 
@@ -619,7 +604,7 @@ public partial class MainWindowViewModel : ViewModelBase
             shouldRecoverPlayControl = false;
             playStartTime = TrackTime;
             _textEditor = textEditor;
-            await _playerConnection.SettingAsync(Settings.ViewSetting);
+            await _playerConnection.SettingAsync(Settings.ViewSetting, Settings.VolumeSetting);
             await _playerConnection.ParseAndPlayAsync(PlaybackMode.Normal, playStartTime, 1,
                 CurrentSimaiFile!.Title, CurrentSimaiFile!.Artist, Offset,
                 Designer, Level, CurrentSimaiFile.RawCharts[SelectedDifficulty],
@@ -644,7 +629,7 @@ public partial class MainWindowViewModel : ViewModelBase
             TrackTime = 0;
             playStartTime = TrackTime;
             _textEditor = textEditor;
-            await _playerConnection.SettingAsync(Settings.ViewSetting);
+            await _playerConnection.SettingAsync(Settings.ViewSetting, Settings.VolumeSetting);
             await _playerConnection.ParseAndPlayAsync(PlaybackMode.IncludeOp, playStartTime, 1,
                 CurrentSimaiFile!.Title, CurrentSimaiFile!.Artist, Offset,
                 Designer, Level, CurrentSimaiFile.RawCharts[SelectedDifficulty],
@@ -668,7 +653,7 @@ public partial class MainWindowViewModel : ViewModelBase
             TrackTime = 0;
             playStartTime = TrackTime;
             _textEditor = textEditor;
-            await _playerConnection.SettingAsync(Settings.ViewSetting);
+            await _playerConnection.SettingAsync(Settings.ViewSetting, Settings.VolumeSetting);
             await _playerConnection.ParseAndPlayAsync(PlaybackMode.Record, playStartTime, 1,
                 CurrentSimaiFile!.Title, CurrentSimaiFile!.Artist, Offset,
                 Designer, Level, CurrentSimaiFile.RawCharts[SelectedDifficulty],
@@ -899,8 +884,7 @@ public partial class MainWindowViewModel : ViewModelBase
         var json = File.ReadAllText(SETTINGS_FILENAME);
         Settings = JsonConvert.DeserializeObject<MajSetting>(json)!;
 
-        //LocalizeDictionary.Instance.Culture = new CultureInfo(Settings.EditSetting.Language);
-
+        I18N.Ins.Culture = new CultureInfo(Settings.EditSetting.Language);
         //_textEditor.FontSize = Settings.EditSetting.FontSize;
 
         SaveSettings(); // 覆盖旧版本setting

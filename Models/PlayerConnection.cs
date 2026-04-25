@@ -114,14 +114,15 @@ internal class PlayerConnection : IDisposable
         };
         await SendAsync(req);
     }
-    public async Task SettingAsync(MajViewSetting viewSetting)
+    public async Task SettingAsync(MajViewSetting viewSetting, MajVolumeSetting volumeSetting)
     {
         var req = new MajWsRequestBase()
         {
             requestType = MajWsRequestType.Setting,
             requestData = new MajWsRequestSetting()
             {
-                ViewSetting = viewSetting
+                ViewSetting = viewSetting,
+                VolumeSetting = volumeSetting
             }
         };
         await SendAsync(req);

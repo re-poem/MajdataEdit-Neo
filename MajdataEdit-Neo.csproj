@@ -2,12 +2,13 @@
   <PropertyGroup>
     <OutputType>WinExe</OutputType>
     <TargetFramework>net9.0</TargetFramework>
-	  <LangVersion>preview</LangVersion>
+    <LangVersion>preview</LangVersion>
     <Nullable>enable</Nullable>
     <BuiltInComInteropSupport>true</BuiltInComInteropSupport>
     <ApplicationManifest>app.manifest</ApplicationManifest>
     <AvaloniaUseCompiledBindingsByDefault>true</AvaloniaUseCompiledBindingsByDefault>
     <AllowUnsafeBlocks>True</AllowUnsafeBlocks>
+    <NeutralResourcesLanguage>en-US</NeutralResourcesLanguage>
   </PropertyGroup>
 
   <ItemGroup>
@@ -19,6 +20,11 @@
     <Compile Remove="Modules\**" />
     <EmbeddedResource Remove="Modules\**" />
     <None Remove="Modules\**" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <AvaloniaResource Remove="Assets\Langs\Langs.resx" />
+    <AvaloniaResource Remove="Assets\Langs\Langs.zh-CN.resx" />
   </ItemGroup>
 
   <ItemGroup>
@@ -43,6 +49,11 @@
   </ItemGroup>
 
   <ItemGroup>
+    <Compile Update="Assets\Langs\Langs.Designer.cs">
+      <DesignTime>True</DesignTime>
+      <AutoGen>True</AutoGen>
+      <DependentUpon>Langs.resx</DependentUpon>
+    </Compile>
     <Compile Update="ViewLocator.cs">
       <CopyToOutputDirectory>Never</CopyToOutputDirectory>
     </Compile>
@@ -63,5 +74,20 @@
 
   <ItemGroup>
     <ProjectReference Include="Modules\AutoSave\AutoSaveModule.csproj" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <EmbeddedResource Update="Assets\Langs\Langs.resx">
+      <Generator>PublicResXFileCodeGenerator</Generator>
+      <LastGenOutput>Langs.Designer.cs</LastGenOutput>
+      <CustomToolNamespace>MajdataEdit_Neo.Assets.Langs</CustomToolNamespace>
+    </EmbeddedResource>
+  </ItemGroup>
+
+  <ItemGroup>
+    <EmbeddedResource Update="Assets\Langs\Langs.resx">
+      <Generator>ResXFileCodeGenerator</Generator>
+      <LastGenOutput>Langs.Designer.cs</LastGenOutput>
+    </EmbeddedResource>
   </ItemGroup>
 </Project>

@@ -4,6 +4,8 @@ using AvaloniaEdit;
 using AvaloniaEdit.TextMate;
 using MajdataEdit_Neo.Controls;
 using MajdataEdit_Neo.ViewModels;
+using System;
+using System.IO;
 using System.Threading.Tasks;
 using TextMateSharp.Grammars;
 using TextMateSharp.Registry;
