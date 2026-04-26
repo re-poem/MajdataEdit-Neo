@@ -13,6 +13,7 @@ using MsBox.Avalonia.Enums;
 using MajdataEdit_Neo.Types.MajWs;
 using MajdataEdit_Neo.Types.MajSetting;
 using MajSimai;
+using System.Collections.Generic;
 
 namespace MajdataEdit_Neo.Models;
 internal class PlayerConnection : IDisposable
@@ -149,7 +150,7 @@ internal class PlayerConnection : IDisposable
         double startAt, float speed, 
         string title, string artist, float offset, 
         string designer, string level, string fumen, 
-        SimaiCommand[] commands, int difficulty, string? maidataPath = null)
+        IList<SimaiCommand> commands, int difficulty, string? maidataPath = null)
     {
         if (ViewSummary.State == ViewStatus.Error) return;
         

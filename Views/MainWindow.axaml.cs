@@ -37,6 +37,8 @@ public partial class MainWindow : Window
         //zoom buttons
         this.FindControl<Button>("ZoomIn").Click += ZoomIn_Click;
         this.FindControl<Button>("ZoomOut").Click += ZoomOut_Click;
+        //control panel
+        First.PointerWheelChanged += First_PointerWheelChanged;
         //this window
         this.KeyDown += MainWindow_KeyDown;
         this.KeyUp += MainWindow_KeyUp;
@@ -81,6 +83,7 @@ public partial class MainWindow : Window
     {
         var seek = textEditor.SelectionStart;
         viewModel.SetCaretTime(seek, isCtrlKeyDown);
+        viewModel.CaretLine = textEditor.TextArea.Caret.Line;
     }
 
     static double? lastX = null;
@@ -106,6 +109,11 @@ public partial class MainWindow : Window
     private void ZoomOut_Click(object? sender, RoutedEventArgs e)
     {
         viewModel.SlideZoomLevel(0.3f);
+    }
+
+    private void First_PointerWheelChanged(object? sender, Avalonia.Input.PointerWheelEventArgs e)
+    {
+        First.Value += (decimal)(e.Delta.Y / 100d);
     }
 
     private void SimaiVisual_PointerWheelChanged(object? sender, Avalonia.Input.PointerWheelEventArgs e)

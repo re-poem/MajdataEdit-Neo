@@ -8,6 +8,7 @@ using AvaloniaEdit;
 using AvaloniaEdit.Document;
 using CommunityToolkit.Mvvm.ComponentModel;
 using DiscordRPC;
+using MajdataEdit_Neo.Extensions;
 using MajdataEdit_Neo.Models;
 using MajdataEdit_Neo.Modules.AutoSave;
 using MajdataEdit_Neo.Modules.AutoSave.Contexts;
@@ -25,6 +26,7 @@ using System.Diagnostics;
 using System.Globalization;
 using System.IO;
 using System.Linq;
+using System.Reflection.Metadata;
 using System.Runtime.InteropServices;
 using System.Threading;
 using System.Threading.Tasks;
@@ -33,6 +35,24 @@ namespace MajdataEdit_Neo.ViewModels;
 
 public partial class MainWindowViewModel : ViewModelBase
 {
+    //------control panel
+    public string DisplayTime
+    {
+        get
+        {
+            var minute = (int)TrackTime / 60;
+            double second = (int)(TrackTime - 60 * minute);
+            return string.Format("{0}:{1:00}", minute, second);
+        }
+    }
+    public string DisplayLineComboText => 
+        $"L {CaretLine}  Cb {CaretCombo}";
+    [ObservableProperty]
+    [NotifyPropertyChangedFor(nameof(FumenDocument))]
+    [NotifyPropertyChangedFor(nameof(Level))]
+    [NotifyPropertyChangedFor(nameof(Designer))]
+    public partial int SelectedDifficulty { get; set; } = 0;
+
     public float Offset
     {
         get
@@ -47,44 +67,6 @@ public partial class MainWindowViewModel : ViewModelBase
             CurrentSimaiFile.Offset = value;
             SetProperty(ref _offset, value);
             OnPropertyChanged(nameof(CurrentSimaiFile));
-        }
-    }
-    public string DisplayTime
-    {
-        get
-        {
-            var minute = (int)TrackTime / 60;
-            double second = (int)(TrackTime - 60 * minute);
-            return string.Format("{0}:{1:00}", minute, second);
-        }
-    }
-    public bool IsLoaded
-    {
-        get
-        {
-            return CurrentSimaiFile is not null;
-        }
-    }
-    public bool IsPointerPressedSimaiVisual { get; set; }
-    public string WindowTitle
-    {
-        get
-        {
-            if (CurrentSimaiFile is null) return "MajdataEdit Neo";
-            return "MajdataEdit Neo - " + CurrentSimaiFile.Title + (IsSaved ? "" : "*");
-        }
-    }
-    public bool IsFumenContextChanged
-    {
-        get
-        {
-            _autoSaveManager.IsFileChanged = !IsSaved;
-            return _autoSaveManager.IsFileChanged;
-        }
-        set
-        {
-            IsSaved = !value;
-            _autoSaveManager.IsFileChanged = value;
         }
     }
     public string Level
@@ -123,14 +105,45 @@ public partial class MainWindowViewModel : ViewModelBase
             OnPropertyChanged(nameof(CurrentSimaiFile));
         }
     }
+    //------window state
+    public bool IsLoaded
+    {
+        get
+        {
+            return CurrentSimaiFile is not null;
+        }
+    }
+    public bool IsPointerPressedSimaiVisual { get; set; }
+    public string WindowTitle
+    {
+        get
+        {
+            if (CurrentSimaiFile is null) return "MajdataEdit Neo";
+            return "MajdataEdit Neo - " + CurrentSimaiFile.Title + (IsSaved ? "" : "*");
+        }
+    }
+    public bool IsFumenContextChanged
+    {
+        get
+        {
+            _autoSaveManager.IsFileChanged = !IsSaved;
+            return _autoSaveManager.IsFileChanged;
+        }
+        set
+        {
+            IsSaved = !value;
+            _autoSaveManager.IsFileChanged = value;
+        }
+    }
+    //------simai
     public TextDocument FumenDocument
     {
         get
         {
             if (CurrentSimaiFile is null) return new TextDocument();
-            var text = CurrentSimaiFile.RawCharts[SelectedDifficulty];
+            var text = CurrentSimaiFile.Charts[SelectedDifficulty].Fumen;
             if (text is null) return new TextDocument();
-            ref var fumenContent = ref CurrentSimaiFile.RawCharts[SelectedDifficulty];
+            var fumenContent = CurrentSimaiFile.Charts[SelectedDifficulty].Fumen;
             OriginFumen = fumenContent;
             return new TextDocument(fumenContent);
         }
@@ -143,21 +156,33 @@ public partial class MainWindowViewModel : ViewModelBase
             if (CurrentSimaiFile is null)
                 return string.Empty;
 
-            return CurrentSimaiFile.RawCharts[SelectedDifficulty];
+            return CurrentSimaiFile.Charts[SelectedDifficulty].Fumen;
         }
     }
     public string OriginFumen { get; set; } = string.Empty;
 
+    [ObservableProperty]
+    [NotifyPropertyChangedFor(nameof(FumenDocument))]
+    [NotifyPropertyChangedFor(nameof(Level))]
+    [NotifyPropertyChangedFor(nameof(Designer))]
+    [NotifyPropertyChangedFor(nameof(Offset))]
+    [NotifyPropertyChangedFor(nameof(IsLoaded))]
+    public partial SimaiFile? CurrentSimaiFile { get; set; } = null;
+
+    [ObservableProperty]
+    public partial SimaiChart CurrentChartData { get; set; }
+
     public async Task SetFumenContent(string content)
     {
+        if (string.IsNullOrWhiteSpace(content)) return;
         if (CurrentSimaiFile is null) return;
-        var text = CurrentSimaiFile.RawCharts[SelectedDifficulty];
-        if (text is null) CurrentSimaiFile.RawCharts[SelectedDifficulty] = "";
-        CurrentSimaiFile.RawCharts[SelectedDifficulty] = content;
+        var text = CurrentSimaiFile.Charts[SelectedDifficulty].Fumen;
+        if (text is null) CurrentSimaiFile.Charts[SelectedDifficulty].Fumen = "";
+        CurrentSimaiFile.Charts[SelectedDifficulty].Fumen = content;
         OnPropertyChanged(nameof(CurrentSimaiFile));
         try
         {
-            CurrentSimaiChart = await _simaiParser.ParseChartAsync(null, null, content);
+            CurrentChartData = await SimaiParser.ParseChartAsync(string.Empty, string.Empty, content);
             //IsSaved = true;
         }
         catch (Exception ex)
@@ -165,7 +190,7 @@ public partial class MainWindowViewModel : ViewModelBase
             Debug.WriteLine(ex);
         }
     }
-
+    //------connection
     public bool IsConnected
     {
         get
@@ -174,20 +199,7 @@ public partial class MainWindowViewModel : ViewModelBase
         }
     }
 
-    [ObservableProperty]
-    [NotifyPropertyChangedFor(nameof(FumenDocument))]
-    [NotifyPropertyChangedFor(nameof(Level))]
-    [NotifyPropertyChangedFor(nameof(Designer))]
-    int selectedDifficulty = 0;
-    [ObservableProperty]
-    [NotifyPropertyChangedFor(nameof(FumenDocument))]
-    [NotifyPropertyChangedFor(nameof(Level))]
-    [NotifyPropertyChangedFor(nameof(Designer))]
-    [NotifyPropertyChangedFor(nameof(Offset))]
-    [NotifyPropertyChangedFor(nameof(IsLoaded))]
-    SimaiFile? currentSimaiFile = null;
-    [ObservableProperty]
-    SimaiChart? currentSimaiChart = null;
+    //------window
     [ObservableProperty]
     MajSetting settings;
     [ObservableProperty]
@@ -203,14 +215,24 @@ public partial class MainWindowViewModel : ViewModelBase
     [NotifyPropertyChangedFor(nameof(DisplayTime))]
     double trackTime = 0f;
     [ObservableProperty]
-    private bool isFollowCursor;
+    bool isFollowCursor;
     [ObservableProperty]
-    private bool isPlayControlEnabled = true;
+    bool isPlayControlEnabled = true;
     [ObservableProperty]
-    private bool isAnimated = true;
+    bool isAnimated = true;
+    [ObservableProperty]
+    double fontSize;
+    [ObservableProperty]
+    [NotifyPropertyChangedFor(nameof(DisplayLineComboText))]
+    int caretLine = 1;
+    [ObservableProperty]
+    [NotifyPropertyChangedFor(nameof(DisplayLineComboText))]
+    int caretCombo = 0;
 
     bool _isBackToStartOnPlayStop = false;
     bool _isUpdatingAutoSaveContext = false;
+
+    bool _isStopping = false;
     
     float _offset = 0;
     double playStartTime = 0d;
@@ -237,7 +259,6 @@ public partial class MainWindowViewModel : ViewModelBase
     TextEditor _textEditor;
 
     PlayerConnection _playerConnection = new PlayerConnection();
-    SimaiParser _simaiParser = new SimaiParser();
     TrackReader _trackReader = new TrackReader();
     InternalAutoSaveContext _internalLocalAutoSaveContext = new();
     InternalAutoSaveContext _internalGlobalAutoSaveContext = new();
@@ -307,38 +328,48 @@ public partial class MainWindowViewModel : ViewModelBase
             Stop(false);
         }
         TrackTime = time;
-        if (CurrentSimaiChart is null) return new Point();
-        var nearestNote = CurrentSimaiChart.CommaTimings.Where(o=> o.Timing + Offset - time < 0).MinBy(o => Math.Abs(o.Timing + Offset - time));
+        if (CurrentChartData is null) return new Point();
+        var nearestNote = CurrentChartData.CommaTimings.Where(o=> o.Timing + Offset - time < 0).MinBy(o => Math.Abs(o.Timing + Offset - time));
         if (nearestNote is null) return new Point();
         return new Point(nearestNote.RawTextPositionX, nearestNote.RawTextPositionY);
     }
     public async void SetCaretTime(int rawPostion, bool setTrackTime)
     {
-        if (CurrentSimaiChart is null) return;
-        var timings = CurrentSimaiChart.CommaTimings.ToArray();
-        var nearestNote = timings.FirstOrDefault();
-        //theLine = theLine.OrderBy(o => o.RawTextPositionX).ToArray();
-        if (timings.Length >= 2)
+        if (CurrentChartData is null) return;
+
+        //timings
+        var timings = CurrentChartData.CommaTimings.ToArray();
+        var nearestTiming = timings.FirstOrDefault();
+        foreach (var timing in timings)
         {
-            for (int i = 0; i + 1 < timings.Length; i++)
+            if (timing.RawTextPosition >= rawPostion)
             {
-                var note = timings[i];
-                var nextnote = timings[i + 1];
-                if(rawPostion <= note.RawTextPosition)
-                {
-                    nearestNote = note;
-                    break;
-                }
-                if (note.RawTextPosition < rawPostion && rawPostion <= nextnote.RawTextPosition)
-                {
-                    nearestNote = nextnote;
-                    break;
-                }
+                nearestTiming = timing;
+                break;
             }
         }
-        if (nearestNote is null) return;
-        CaretTime = nearestNote.Timing;
-        if (IsFollowCursor|| setTrackTime) {
+        if (nearestTiming is null) return;
+        CaretTime = nearestTiming.Timing;
+
+        //notes (combo)
+        var notes = CurrentChartData.NoteTimings.ToArray();
+        var currentCombo = 0;
+        foreach (var note in notes)
+        {
+            if (note.RawTextPosition >= rawPostion)
+            {
+                break;
+            }
+            else
+            {
+                currentCombo += note.Notes.Length;
+            }
+        }
+        CaretCombo = currentCombo;
+
+        //track time
+        if (IsFollowCursor|| setTrackTime) 
+        {
             //By pass Ctrl+Click if it's playing
             if (_playerConnection.ViewSummary.State == ViewStatus.Playing) return;
             Stop(false);
@@ -357,7 +388,7 @@ public partial class MainWindowViewModel : ViewModelBase
             if (maidataPath is null) return;
             var fileInfo = new FileInfo(maidataPath);
             _maidataDir = fileInfo.Directory.FullName;
-            if(File.Exists( _maidataDir+"/maidata.txt"))
+            if(File.Exists( _maidataDir + "/maidata.txt"))
             {
                 var mainWindow = Application.Current?.ApplicationLifetime as IClassicDesktopStyleApplicationLifetime;
                 await MessageBoxManager.GetMessageBoxStandard(
@@ -385,11 +416,12 @@ public partial class MainWindowViewModel : ViewModelBase
             if (file is null) return;
             var maidataPath = file.TryGetLocalPath();
             if (maidataPath is null) return;
-            CurrentSimaiFile = await _simaiParser.ParseAsync(maidataPath);
+
+            CurrentSimaiFile = await SimaiParser.ParseAsync(new FileStream(maidataPath, FileMode.Open, FileAccess.Read));
+
             var fileInfo = new FileInfo(maidataPath);
             _maidataDir = fileInfo.Directory.FullName;
             SongTrackInfo = _trackReader.ReadTrack(_maidataDir);
-            //IsFumenContextChanged = false;
             _autoSaveManager.Enabled = true;
             _internalAutoSaveContentProvider.Content = await File.ReadAllTextAsync(maidataPath);
             UpdateAutoSaveContext();
@@ -477,7 +509,8 @@ public partial class MainWindowViewModel : ViewModelBase
             IsFumenContextChanged = false;
             OriginFumen = CurrentFumen;
         }
-        await _simaiParser.DeParseAsync(CurrentSimaiFile, _maidataDir + "/maidata.txt");
+        await SimaiParser.DeparseAsync(CurrentSimaiFile, 
+            new FileStream(_maidataDir + "/maidata.txt", FileMode.Create, FileAccess.Write));
     }
     public void OpenBpmTapWindow()
     {
@@ -493,6 +526,7 @@ public partial class MainWindowViewModel : ViewModelBase
         {
             Title = CurrentSimaiFile.Title,
             Artist = CurrentSimaiFile.Artist,
+            FinalDesigner = CurrentSimaiFile.FinalDesigner,
             SimaiCommands = new ObservableCollection<SimaiCommand>(CurrentSimaiFile.Commands),
             MaidataDir = _maidataDir
         };
@@ -501,7 +535,10 @@ public partial class MainWindowViewModel : ViewModelBase
         if (datacontext is null) throw new Exception("Wtf");
         CurrentSimaiFile.Title = datacontext.Title;
         CurrentSimaiFile.Artist = datacontext.Artist;
-        CurrentSimaiFile.Commands = datacontext.SimaiCommands.ToArray();
+        CurrentSimaiFile.FinalDesigner = datacontext.FinalDesigner;
+        CurrentSimaiFile.Commands.Clear();
+        foreach (var item in datacontext.SimaiCommands)
+            CurrentSimaiFile.Commands.Add(item);
         await Task.Delay(100);
         OnPropertyChanged(nameof(CurrentSimaiFile));
         await EditorLoad();
@@ -569,7 +606,7 @@ public partial class MainWindowViewModel : ViewModelBase
             await _playerConnection.SettingAsync(Settings.ViewSetting, Settings.VolumeSetting);
             await _playerConnection.ParseAndPlayAsync(PlaybackMode.Normal, playStartTime, 1, 
                 CurrentSimaiFile!.Title, CurrentSimaiFile!.Artist, Offset, 
-                Designer, Level, CurrentSimaiFile.RawCharts[SelectedDifficulty], 
+                Designer, Level, CurrentSimaiFile.Charts[SelectedDifficulty].Fumen,
                 CurrentSimaiFile.Commands, SelectedDifficulty);
         }
         finally
@@ -607,7 +644,7 @@ public partial class MainWindowViewModel : ViewModelBase
             await _playerConnection.SettingAsync(Settings.ViewSetting, Settings.VolumeSetting);
             await _playerConnection.ParseAndPlayAsync(PlaybackMode.Normal, playStartTime, 1,
                 CurrentSimaiFile!.Title, CurrentSimaiFile!.Artist, Offset,
-                Designer, Level, CurrentSimaiFile.RawCharts[SelectedDifficulty],
+                Designer, Level, CurrentSimaiFile.Charts[SelectedDifficulty].Fumen,
                 CurrentSimaiFile.Commands, SelectedDifficulty);
         }
         finally
@@ -632,7 +669,7 @@ public partial class MainWindowViewModel : ViewModelBase
             await _playerConnection.SettingAsync(Settings.ViewSetting, Settings.VolumeSetting);
             await _playerConnection.ParseAndPlayAsync(PlaybackMode.IncludeOp, playStartTime, 1,
                 CurrentSimaiFile!.Title, CurrentSimaiFile!.Artist, Offset,
-                Designer, Level, CurrentSimaiFile.RawCharts[SelectedDifficulty],
+                Designer, Level, CurrentSimaiFile.Charts[SelectedDifficulty].Fumen,
                 CurrentSimaiFile.Commands, SelectedDifficulty);
         }
         finally
@@ -656,7 +693,7 @@ public partial class MainWindowViewModel : ViewModelBase
             await _playerConnection.SettingAsync(Settings.ViewSetting, Settings.VolumeSetting);
             await _playerConnection.ParseAndPlayAsync(PlaybackMode.Record, playStartTime, 1,
                 CurrentSimaiFile!.Title, CurrentSimaiFile!.Artist, Offset,
-                Designer, Level, CurrentSimaiFile.RawCharts[SelectedDifficulty],
+                Designer, Level, CurrentSimaiFile.Charts[SelectedDifficulty].Fumen,
                 CurrentSimaiFile.Commands, SelectedDifficulty, _maidataDir);
         }
         finally
@@ -680,7 +717,7 @@ public partial class MainWindowViewModel : ViewModelBase
                 TrackTime = watch.ElapsedMilliseconds / 1000d + playStartTime;
                 if (IsFollowCursor)
                 {
-                    var nearestNote = CurrentSimaiChart.CommaTimings.MinBy(o => Math.Abs(o.Timing + Offset - TrackTime));
+                    var nearestNote = CurrentChartData.CommaTimings.MinBy(o => Math.Abs(o.Timing + Offset - TrackTime));
                     if (nearestNote is null) continue;
 
                     var point = new Point(nearestNote.RawTextPositionX, nearestNote.RawTextPositionY);
@@ -699,9 +736,11 @@ public partial class MainWindowViewModel : ViewModelBase
     }
     public async void Stop(bool isBackToStart = true)
     {
+        if (_isStopping) return;
         _isBackToStartOnPlayStop = isBackToStart;
         try
         {
+            _isStopping = true;
             IsPlayControlEnabled = false;
             if (!await CheckPlayerConnectionAndReconnect())
             {
@@ -727,6 +766,7 @@ public partial class MainWindowViewModel : ViewModelBase
         }
         finally
         {
+            _isStopping = false;
             IsPlayControlEnabled = true;
         }
         
@@ -768,6 +808,7 @@ public partial class MainWindowViewModel : ViewModelBase
     }
     public void SeekToDocPos(Point position, TextEditor editor)
     {
+        if (position.Y > editor.Document.LineCount) return;
         var offset = editor.Document.GetOffset((int)position.Y + 1, (int)position.X);
         editor.Select(offset, 0);
         editor.ScrollTo((int)position.Y + 1, (int)position.X);
@@ -807,7 +848,7 @@ public partial class MainWindowViewModel : ViewModelBase
             {
                 if (CurrentSimaiFile is null)
                     return;
-                var maidata = await SimaiParser.Shared.DeParseAsStringAsync(CurrentSimaiFile);
+                var maidata = await SimaiParser.DeparseAsync(CurrentSimaiFile);
                 _internalAutoSaveContentProvider.Content = maidata;
             }
             catch (Exception ex)
@@ -873,7 +914,7 @@ public partial class MainWindowViewModel : ViewModelBase
     private void CreateSettings()
     {
         Settings = new MajSetting();
-        File.WriteAllText(SETTINGS_FILENAME, JsonConvert.SerializeObject(Settings, Newtonsoft.Json.Formatting.Indented));
+        File.WriteAllText(SETTINGS_FILENAME, JsonConvert.SerializeObject(Settings, Formatting.Indented));
 
         OpenSettingsWindow();
     }
@@ -885,14 +926,14 @@ public partial class MainWindowViewModel : ViewModelBase
         Settings = JsonConvert.DeserializeObject<MajSetting>(json)!;
 
         I18N.Ins.Culture = new CultureInfo(Settings.EditSetting.Language);
-        //_textEditor.FontSize = Settings.EditSetting.FontSize;
+        FontSize = Settings.EditSetting.FontSize;
 
         SaveSettings(); // 覆盖旧版本setting
     }
 
     private void SaveSettings()
     {
-        File.WriteAllText(SETTINGS_FILENAME, JsonConvert.SerializeObject(Settings, Newtonsoft.Json.Formatting.Indented));
+        File.WriteAllText(SETTINGS_FILENAME, JsonConvert.SerializeObject(Settings, Formatting.Indented));
     }
 
 

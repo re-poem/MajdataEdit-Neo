@@ -32,10 +32,16 @@
         <Button Content="Select Background Video" Command="{Binding OpenBgVideo}" HorizontalAlignment="Stretch"></Button>
       </StackPanel>
       <StackPanel Grid.Column="1" VerticalAlignment="Stretch" Margin="10" Spacing="10">
-        <Label>Title</Label>
-        <TextBox Text="{Binding Title}" />
-        <Label>Artist</Label>
-        <TextBox Text="{Binding Artist}"></TextBox>
+		<DockPanel Margin="0 5 0 0">
+            <Label DockPanel.Dock="Left">Title</Label>
+            <TextBox Text="{Binding Title}" Margin="20 0 0 0" />
+        </DockPanel>
+		<Grid ColumnDefinitions="Auto,*,Auto,*">
+            <Label Grid.Column="0">Artist</Label>
+            <TextBox Grid.Column="1" Text="{Binding Artist}" Margin="14 0 0 0" ></TextBox>
+            <Label Grid.Column="2" Margin="14 0 0 0">Final Designer</Label>
+            <TextBox Grid.Column="3" Text="{Binding FinalDesigner}" Margin="14 0 0 0" ></TextBox>
+        </Grid>
         <Label>Commands</Label>
         <ScrollViewer Height="175">
           <StackPanel>

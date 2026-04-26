@@ -105,10 +105,13 @@
 			</Menu>
 
 			<StackPanel Grid.Row="1" Grid.Column="1" Grid.ColumnSpan="2" Grid.RowSpan="8"
-						Margin="6 0 0 0" Width="116">
+						Margin="6 0 8 0" Width="116">
+
 				<Label Height="90" Name="Time" FontSize="40" HorizontalAlignment="Center" VerticalAlignment="Center"
 					   Content="{Binding DisplayTime}" Padding="0 30 0 0"/>
-				<Label VerticalAlignment="Center" Content="{m:I18N Gui_Difficulty}"/>			
+				<Label Height="30" Name="LineCombo" FontSize="14" HorizontalAlignment="Center" VerticalAlignment="Center"
+					   Content="{Binding DisplayLineComboText}" Padding="0 0 0 0"/>
+
 				<ComboBox Name="Difficulty"
 						  Width="116" VerticalAlignment="Center"
 						  SelectedIndex="{Binding SelectedDifficulty}">
@@ -120,19 +123,28 @@
 					<ComboBoxItem Content="Re:MASTER" />
 					<ComboBoxItem Content="ORIGINAL" />
 				</ComboBox>
-				<Label  VerticalAlignment="Center">Level</Label>
-				<TextBox  Name="Level" Text="{Binding Level}"/>
-				<Label  VerticalAlignment="Center">Designer</Label>
-				<TextBox  Name="Designer" Text="{Binding Designer}"/>
-				<Label  VerticalAlignment="Center">Offset</Label>
-				<NumericUpDown  Name="First" Value="{Binding Offset}" Increment="0.01"/>
 
-				<DockPanel Margin="0 10 0 0" LastChildFill="False">
+				<DockPanel Margin="0 8 0 0">
+					<Label VerticalAlignment="Center" DockPanel.Dock="Left">Level</Label>
+					<TextBox Name="Level" Text="{Binding Level}" Margin="10 0 0 0"/>
+				</DockPanel>
+
+				<DockPanel Margin="0 8 0 0">
+					<Label  VerticalAlignment="Center" DockPanel.Dock="Left">Des</Label>
+					<TextBox  Name="Designer" Text="{Binding Designer}" Margin="20 0 0 0"/>
+				</DockPanel>
+
+				<DockPanel Margin="0 8 0 0">
+					<Label  VerticalAlignment="Center" Margin="0 10 0 0">Offset</Label>
+					<NumericUpDown Name="First" Value="{Binding Offset}" Margin="5 0 0 0" ShowButtonSpinner="False"/>
+				</DockPanel>
+
+				<DockPanel Margin="0 20 0 0" LastChildFill="False">
 					<Label Content="Error" DockPanel.Dock="Left" />
 					<Label Name="ErrorCountLabel" Content="100000" DockPanel.Dock="Right"/>
 				</DockPanel>
 
-				<CheckBox Grid.Row="8" Margin="0 0 0 0"
+				<CheckBox Grid.Row="8" Margin="0 10 0 0"
 						  IsChecked="{Binding IsFollowCursor}" FontSize="12">Follow Cursor</CheckBox>
 				<StackPanel Orientation="Horizontal" Margin="9 0 0 0">
 					<CheckBox IsChecked="{Binding IsConnected}" IsEnabled="False" Width="38" Margin="0 -7 0 0"/>
@@ -159,7 +171,7 @@
 									 Name="Editor" BorderBrush="#50FFFFFF" BorderThickness="0.5"
 									 ShowLineNumbers="True" Margin="5 5 5 5" Padding="5" WordWrap="False"
 									 FontFamily="Cascadia Code,Consolas,Menlo,Monospace"
-									 >
+									 FontSize="{Binding FontSize}">
 				<AvaloniaEdit:TextEditor.ContextFlyout>
 					<MenuFlyout>
 						<MenuItem Header="Mirror Horizontally" CommandParameter="{Binding #Editor}" Command="{Binding MirrorHorizontal}">
@@ -197,7 +209,7 @@
 			<controls:SimaiVisualizerControl Name="SimaiVisual"
 											 Height="100" Grid.Row="4" Grid.ColumnSpan="4"
 											 Time="{Binding TrackTime}" TrackIf="{Binding SongTrackInfo}"
-											 ZoomLevel="{Binding TrackZoomLevel}" SimaiChart="{Binding CurrentSimaiChart}"
+											 ZoomLevel="{Binding TrackZoomLevel}" SimaiChart="{Binding CurrentChartData}"
 											 Offset="{Binding Offset}" CaretTime="{Binding CaretTime}" IsAnimated ="{Binding IsAnimated}"/>
 			<DockPanel Grid.Row="4" >
 				<Button Name="ZoomOut" DockPanel.Dock="Bottom" Width="30" Height="30" Margin="10">

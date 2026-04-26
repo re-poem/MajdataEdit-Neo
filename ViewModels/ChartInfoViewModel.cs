@@ -18,6 +18,8 @@ partial class ChartInfoViewModel : ViewModelBase
     private string? title;
     [ObservableProperty]
     private string? artist;
+    [ObservableProperty]
+    private string? finalDesigner;
 
     [ObservableProperty]
     private ObservableCollection<SimaiCommand>? simaiCommands;
