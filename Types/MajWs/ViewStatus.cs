@@ -4,7 +4,6 @@ internal enum ViewStatus
 {
     Idle,
     Loaded,
-    Ready,
     Error,
     Playing,
     Paused,

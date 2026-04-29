@@ -63,13 +63,13 @@ public static partial class ReadOnlySpanExtensions
     public static T FirstOrDefault<T>(this ReadOnlySpan<T> span)
         => span.IsEmpty ? default! : span[0];
 
-    public static T First<T>(this ReadOnlySpan<T> span, Func<T, bool> predicate)
+    public static T? FirstOrDefault<T>(this ReadOnlySpan<T> span, Func<T, bool> predicate)
     {
         foreach (var item in span)
             if (predicate(item))
                 return item;
 
-        throw new InvalidOperationException("No matching element.");
+        return default;
     }
 
     public static T Last<T>(this ReadOnlySpan<T> span)
@@ -81,16 +81,6 @@ public static partial class ReadOnlySpanExtensions
 
     public static T LastOrDefault<T>(this ReadOnlySpan<T> span)
         => span.IsEmpty ? default! : span[^1];
-
-    public static T Single<T>(this ReadOnlySpan<T> span)
-    {
-        if (span.Length != 1)
-            throw new InvalidOperationException("Sequence does not contain exactly one element.");
-        return span[0];
-    }
-
-    public static T ElementAt<T>(this ReadOnlySpan<T> span, int index)
-        => span[index];
 
     // ========================
     // Projection
@@ -149,11 +139,10 @@ public static partial class ReadOnlySpanExtensions
         return acc;
     }
 
-    public static T Min<T>(this ReadOnlySpan<T> span)
+    public static T? Min<T>(this ReadOnlySpan<T> span)
         where T : IComparable<T>
     {
-        if (span.IsEmpty)
-            throw new InvalidOperationException();
+        if (span.IsEmpty) return default;
 
         var min = span[0];
 
@@ -164,11 +153,10 @@ public static partial class ReadOnlySpanExtensions
         return min;
     }
 
-    public static T Max<T>(this ReadOnlySpan<T> span)
+    public static T? Max<T>(this ReadOnlySpan<T> span)
         where T : IComparable<T>
     {
-        if (span.IsEmpty)
-            throw new InvalidOperationException();
+        if (span.IsEmpty) return default;
 
         var max = span[0];
 
@@ -216,13 +204,12 @@ public static partial class ReadOnlySpanExtensions
     public static ReadOnlySpan<T> TakeLast<T>(this ReadOnlySpan<T> span, int count)
         => span[Math.Max(0, span.Length - count)..];
     
-    public static TSource MinBy<TSource, TKey>(
+    public static TSource? MinBy<TSource, TKey>(
         this ReadOnlySpan<TSource> span,
         Func<TSource, TKey> selector)
         where TKey : IComparable<TKey>
     {
-        if (span.IsEmpty)
-            throw new InvalidOperationException("Sequence contains no elements.");
+        if (span.IsEmpty) return default;
 
         var bestItem = span[0];
         var bestKey = selector(bestItem);
@@ -242,13 +229,12 @@ public static partial class ReadOnlySpanExtensions
         return bestItem;
     }
 
-    public static TSource MaxBy<TSource, TKey>(
+    public static TSource? MaxBy<TSource, TKey>(
         this ReadOnlySpan<TSource> span,
         Func<TSource, TKey> selector)
         where TKey : IComparable<TKey>
     {
-        if (span.IsEmpty)
-            throw new InvalidOperationException("Sequence contains no elements.");
+        if (span.IsEmpty) return default;
 
         var bestItem = span[0];
         var bestKey = selector(bestItem);

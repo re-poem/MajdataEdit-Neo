@@ -274,6 +274,7 @@ public partial class MainWindowViewModel : ViewModelBase
         _playerConnection.OnPlayStarted += _playerConnection_OnPlayStarted;
         _playerConnection.OnPlayStopped += _playerConnection_OnPlayStopped;
         _playerConnection.OnLoadRequired += _playerConnection_OnLoadRequired;
+        _playerConnection.OnStopRequired += _playerConnection_OnStopRequired;
         _playerConnection.OnLoadFinished += _playerConnection_OnLoadFinished;
         _playerConnection.OnDisconnected += _playerConnection_OnDisconnected;
         _internalLocalAutoSaveContext = new(_internalAutoSaveContentProvider);
@@ -329,7 +330,9 @@ public partial class MainWindowViewModel : ViewModelBase
         }
         TrackTime = time;
         if (CurrentChartData is null) return new Point();
-        var nearestNote = CurrentChartData.CommaTimings.Where(o=> o.Timing + Offset - time < 0).MinBy(o => Math.Abs(o.Timing + Offset - time));
+        var timings = CurrentChartData.CommaTimings.Where(o => o.Timing + Offset - time < 0);
+        if (timings.Length == 0) return new Point();
+        var nearestNote = timings.MinBy(o => Math.Abs(o.Timing + Offset - time));
         if (nearestNote is null) return new Point();
         return new Point(nearestNote.RawTextPositionX, nearestNote.RawTextPositionY);
     }
@@ -755,7 +758,6 @@ public partial class MainWindowViewModel : ViewModelBase
                         break;
                     else
                         return;
-                case ViewStatus.Ready:
                 case ViewStatus.Playing:
                 case ViewStatus.Paused:
                     break;
@@ -784,6 +786,11 @@ public partial class MainWindowViewModel : ViewModelBase
     {
         await EditorLoad();
     }
+
+    private async void _playerConnection_OnStopRequired(object? sender, EventArgs e)
+    {
+        Stop();
+    }
     private void _playerConnection_OnDisconnected(object? sender, EventArgs e)
     {
         OnPropertyChanged(nameof(IsConnected));
@@ -808,7 +815,7 @@ public partial class MainWindowViewModel : ViewModelBase
     }
     public void SeekToDocPos(Point position, TextEditor editor)
     {
-        if (position.Y > editor.Document.LineCount) return;
+        if (position.Y + 1 > editor.Document.LineCount) return;
         var offset = editor.Document.GetOffset((int)position.Y + 1, (int)position.X);
         editor.Select(offset, 0);
         editor.ScrollTo((int)position.Y + 1, (int)position.X);

@@ -50,7 +50,7 @@ partial class ChartInfoViewModel : ViewModelBase
     public void AddNewCommand()
     {
         if (SimaiCommands is null) SimaiCommands = new();
-        SimaiCommands.Add(new SimaiCommand("", ""));
+        SimaiCommands.Add(new SimaiCommand("prefix", "value"));
     }
     public void DelCommand(SimaiCommand command)
     {

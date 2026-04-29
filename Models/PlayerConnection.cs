@@ -27,6 +27,7 @@ internal class PlayerConnection : IDisposable
     public event NotifyViewStateChangedEventHandler? OnPlayStopped;
     
     public event EventHandler? OnLoadRequired;
+    public event EventHandler? OnStopRequired;
     public event EventHandler? OnLoadFinished;
     public event EventHandler? OnDisconnected;
 
@@ -102,7 +103,19 @@ internal class PlayerConnection : IDisposable
                                        string coverPath,
                                        string mvPath)
     {
-        if (ViewSummary.State != ViewStatus.Idle && ViewSummary.State != ViewStatus.Loaded) throw new InvalidOperationException();
+        if (ViewSummary.State == ViewStatus.Error) return;
+
+        if (ViewSummary.State != ViewStatus.Loaded)
+        {
+            if (ViewSummary.State is ViewStatus.Paused or ViewStatus.Playing)
+            {
+                OnStopRequired?.Invoke(this, new EventArgs());
+            }
+
+            //if busy, wait
+            while (ViewSummary.State == ViewStatus.Busy)
+                await Task.Yield();
+        }
         var req = new MajWsRequestBase()
         {
             requestType = MajWsRequestType.Load,
@@ -156,17 +169,19 @@ internal class PlayerConnection : IDisposable
         
         if (ViewSummary.State != ViewStatus.Loaded)
         {
-            //if busy, wait
-            if (ViewSummary.State == ViewStatus.Busy)
-                while (ViewSummary.State == ViewStatus.Busy) 
-                    await Task.Yield();
+            if (ViewSummary.State is ViewStatus.Paused or ViewStatus.Playing)
+            {
+                OnStopRequired?.Invoke(this, new EventArgs());
+            }
             else
             {
                 OnLoadRequired?.Invoke(this, new EventArgs());
-                return;
             }
+
+            //if busy, wait
+            while (ViewSummary.State == ViewStatus.Busy)
+                await Task.Yield();
         }
-        
 
         var req = new MajWsRequestBase()
         {
