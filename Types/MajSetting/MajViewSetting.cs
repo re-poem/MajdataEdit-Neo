@@ -52,7 +52,7 @@ public class MajViewSetting
 
     [SettingControl(SettingControlType.Selection,
         Values = new object[] { AutoPlayMode.Enable, 
-                                AutoPlayMode.DjAuto, 
+                                AutoPlayMode.DJAuto, 
                                 AutoPlayMode.Random, 
                                 AutoPlayMode.Disable },
         Labels = new[] {        "Enable", 
@@ -64,6 +64,9 @@ public class MajViewSetting
 
     [SettingControl(SettingControlType.Numeric, Max = 1000, Min = 0, Step = 30)]
     public int OutputFps { get; set; } = 60;
+
+    [SettingUnbrowsable]
+    public UIType UIType { get; set; } = UIType.Legacy;
 }
 
 public enum EditorComboIndicator
@@ -84,4 +87,10 @@ public enum EditorComboIndicator
     CScoreDedeluxe = 101,
     CScoreDownDedeluxe,
     MAX
+}
+
+public enum UIType
+{
+    Legacy,
+    TrgUI
 }

@@ -20,3 +20,6 @@ public class SettingControlAttribute(SettingControlType type) : Attribute
     public object[]? Values { get; set; } //only for Selection
     public string[]? Labels { get; set; }
 }
+
+[AttributeUsage(AttributeTargets.Property)]
+public class SettingUnbrowsableAttribute : Attribute;

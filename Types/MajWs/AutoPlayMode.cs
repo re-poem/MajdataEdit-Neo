@@ -1,7 +1,7 @@
 ﻿public enum AutoPlayMode
 {
     Enable,
-    DjAuto,
+    DJAuto,
     Random,
     Disable
 }

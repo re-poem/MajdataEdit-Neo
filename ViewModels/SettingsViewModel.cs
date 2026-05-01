@@ -21,6 +21,9 @@ public partial class SettingsViewModel : ViewModelBase
     {
         foreach (var categoryProp in typeof(MajSetting).GetProperties())
         {
+            var categoryBrowsable = categoryProp.GetCustomAttribute<SettingUnbrowsableAttribute>();
+            if (categoryBrowsable != null) continue;
+
             var subSection = categoryProp.GetValue(settingInstance);
             if (subSection == null) continue;
 
@@ -29,10 +32,16 @@ public partial class SettingsViewModel : ViewModelBase
             {
                 Items = subSection.GetType()
                     .GetProperties()
+                    .Where(p => {
+                        var attr = p.GetCustomAttribute<SettingUnbrowsableAttribute>();
+                        return attr == null;
+                    })
                     .Select(p => new SettingItem(subSection, p))
                     .ToList()
             };
-            Categories.Add(category);
+
+            if (category.Items.Count != 0)
+                Categories.Add(category);
         }
     }
 }
