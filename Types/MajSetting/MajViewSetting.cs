@@ -67,6 +67,9 @@ public class MajViewSetting
     [SettingControl(SettingControlType.Numeric, Max = 1000, Min = 0, Step = 30)]
     public int OutputFps { get; set; } = 60;
 
+    [SettingControl(SettingControlType.Toggle)]
+    public bool UseAlpha { get; set; } = false;
+
     [SettingUnbrowsable]
     public UIType UIType { get; set; } = UIType.Legacy;
 }
