@@ -18,7 +18,7 @@ using System.Collections.Generic;
 namespace MajdataEdit_Neo.Models;
 internal class PlayerConnection : IDisposable
 {
-    public bool IsConnected => _client.IsAlive;
+    public bool IsConnected => _client?.IsAlive ?? false;
     public ViewSummary ViewSummary => _viewSummary;
     private ViewSummary _viewSummary;
 
@@ -33,7 +33,7 @@ internal class PlayerConnection : IDisposable
 
     bool _lastState = false;
     Task _listenerTask = Task.CompletedTask;
-    WebSocket _client = new("ws://127.0.0.1:8083/majdata");
+    WebSocket? _client;
     ConcurrentQueue<MessageEventArgs> _playerMessages = new();
     
     readonly static JsonSerializerOptions JSON_READER_OPTIONS = new()

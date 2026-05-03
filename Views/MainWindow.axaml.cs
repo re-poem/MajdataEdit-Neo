@@ -1,8 +1,12 @@
 using Avalonia.Controls;
 using Avalonia.Interactivity;
+using Avalonia.Threading;
 using AvaloniaEdit;
+using AvaloniaEdit.CodeCompletion;
 using AvaloniaEdit.TextMate;
 using MajdataEdit_Neo.Controls;
+using MajdataEdit_Neo.Models.SimaiChecker;
+using MajdataEdit_Neo.Types.SimaiAnalyzer;
 using MajdataEdit_Neo.ViewModels;
 using System;
 using System.IO;
@@ -16,13 +20,18 @@ public partial class MainWindow : Window
 {
     MainWindowViewModel viewModel => (MainWindowViewModel)DataContext;
     TextEditor textEditor;
+    TextMarkerService markerService;
     SimaiVisualizerControl simaiVisual;
+
+    DispatcherTimer _debounceTimer;
+    string? _currentTooltipMessage;
     public MainWindow()
     {
         InitializeComponent();
         //setup editor
         textEditor = this.FindControl<TextEditor>("Editor");
         textEditor.TextChanged += TextEditor_TextChanged;
+        textEditor.TextArea.TextEntered += TextEditor_TextArea_TextEntered;
         textEditor.TextArea.Caret.PositionChanged += Caret_PositionChanged;
         textEditor.Options.HighlightCurrentLine = true;
         textEditor.Options.EnableTextDragDrop = true;
@@ -30,6 +39,11 @@ public partial class MainWindow : Window
         var _install = TextMate.InstallTextMate(textEditor, _registryOptions);
         var registry = new Registry(_install.RegistryOptions);
         _install.SetGrammarFile(Path.Combine(AppDomain.CurrentDomain.BaseDirectory, "simai.tmLanguage.json"));
+        _debounceTimer = new DispatcherTimer{ Interval = TimeSpan.FromMilliseconds(300) };
+        _debounceTimer.Tick += _debounceTimer_Tick;
+        markerService = new TextMarkerService(textEditor.Document, textEditor.TextArea.TextView);
+        textEditor.TextArea.TextView.BackgroundRenderers.Add(markerService);
+        textEditor.PointerMoved += TextEditor_PointerMoved;
         //setup visualizer
         simaiVisual = this.FindControl<SimaiVisualizerControl>("SimaiVisual");
         simaiVisual.PointerWheelChanged += SimaiVisual_PointerWheelChanged;
@@ -131,10 +145,69 @@ public partial class MainWindow : Window
 
     private async void TextEditor_TextChanged(object? sender, System.EventArgs e)
     {
-        //TODO: add timer
+        _debounceTimer.Stop();
+        _debounceTimer.Start();
         await viewModel.SetFumenContent(((TextEditor)sender).Text);
         var seek = textEditor.SelectionStart;
         viewModel.SetCaretTime(seek,false);
+    }
+    private void _debounceTimer_Tick(object? sender, EventArgs e)
+    {
+        _debounceTimer.Stop();
+        TextEditor_DebouncedTextChanged();
+    }
+    private async void TextEditor_DebouncedTextChanged()
+    {
+        var fumen = viewModel.CurrentFumen;
+        var diags = await Task.Run(() => SimaiChecker.Check(fumen));
+        viewModel.SimaiDiagnostics = diags;
+        markerService.UpdateDiags(diags);
+    }
+    private void TextEditor_PointerMoved(object? sender, Avalonia.Input.PointerEventArgs e)
+    {
+        var textView = textEditor.TextArea.TextView;
+        var pos = e.GetPosition(textView);
+        var visualPos = textView.GetPosition(pos + textView.ScrollOffset);
+
+        string? newMessage = null;
+        if (visualPos != null)
+        {
+            int offset = textEditor.Document.GetOffset(visualPos.Value.Line, visualPos.Value.Column);
+            var marker = markerService.GetMarkerAtOffset(offset);
+            newMessage = marker?.Message;
+        }
+        
+        if (_currentTooltipMessage != newMessage)
+        {
+            _currentTooltipMessage = newMessage;
+            if (!string.IsNullOrEmpty(newMessage))
+            {
+                ToolTip.SetTip(textEditor.TextArea, newMessage);
+                ToolTip.SetIsOpen(textEditor.TextArea, true);
+            }
+            else
+            {
+                ToolTip.SetIsOpen(textEditor.TextArea, false);
+            }
+        }
+    }
+
+    private void TextEditor_TextArea_TextEntered(object? sender, Avalonia.Input.TextInputEventArgs e)
+    {
+        if (e.Text == "[")
+        {
+            // Show code completion when a 'h' is typed
+            var completionWindow = new CompletionWindow(textEditor.TextArea);
+            completionWindow.Closed += (o, args) => completionWindow = null;
+
+            var data = completionWindow.CompletionList.CompletionData;
+            data.Add(new SimaiCompletionData("4:1]", null));
+            data.Add(new SimaiCompletionData("8:1]", null));
+            data.Add(new SimaiCompletionData("384:1]", null));
+            data.Add(new SimaiCompletionData("1:0]", null));
+
+            completionWindow.Show();
+        }
     }
 
     private async void FindReplace_PointerPressed(object? sender, Avalonia.Input.PointerPressedEventArgs e)

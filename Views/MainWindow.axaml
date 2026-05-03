@@ -139,9 +139,9 @@
 					<NumericUpDown Name="First" Value="{Binding Offset}" Margin="5 0 0 0" ShowButtonSpinner="False"/>
 				</DockPanel>
 
-				<DockPanel Margin="0 20 0 0" LastChildFill="False">
+				<DockPanel Margin="0 20 0 0" LastChildFill="True">
 					<Label Content="Error" DockPanel.Dock="Left" />
-					<Label Name="ErrorCountLabel" Content="100000" DockPanel.Dock="Right"/>
+					<Label Name="ErrorCountLabel" Content="{Binding SimaiDiagnosticsCount}" HorizontalAlignment="Center"/>
 				</DockPanel>
 
 				<CheckBox Grid.Row="8" Margin="0 10 0 0"

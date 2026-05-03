@@ -10,6 +10,7 @@ using CommunityToolkit.Mvvm.ComponentModel;
 using DiscordRPC;
 using MajdataEdit_Neo.Extensions;
 using MajdataEdit_Neo.Models;
+using MajdataEdit_Neo.Models.SimaiChecker;
 using MajdataEdit_Neo.Modules.AutoSave;
 using MajdataEdit_Neo.Modules.AutoSave.Contexts;
 using MajdataEdit_Neo.Types;
@@ -21,6 +22,7 @@ using MsBox.Avalonia;
 using MsBox.Avalonia.Enums;
 using Newtonsoft.Json;
 using System;
+using System.Collections.Generic;
 using System.Collections.ObjectModel;
 using System.Diagnostics;
 using System.Globalization;
@@ -47,6 +49,7 @@ public partial class MainWindowViewModel : ViewModelBase
     }
     public string DisplayLineComboText => 
         $"L {CaretLine}  Cb {CaretCombo}";
+
     [ObservableProperty]
     [NotifyPropertyChangedFor(nameof(FumenDocument))]
     [NotifyPropertyChangedFor(nameof(Level))]
@@ -105,6 +108,7 @@ public partial class MainWindowViewModel : ViewModelBase
             OnPropertyChanged(nameof(CurrentSimaiFile));
         }
     }
+    public int SimaiDiagnosticsCount => SimaiDiagnostics?.Count ?? 0;
     //------window state
     public bool IsLoaded
     {
@@ -228,6 +232,9 @@ public partial class MainWindowViewModel : ViewModelBase
     [ObservableProperty]
     [NotifyPropertyChangedFor(nameof(DisplayLineComboText))]
     int caretCombo = 0;
+    [ObservableProperty]
+    [NotifyPropertyChangedFor(nameof(SimaiDiagnosticsCount))]
+    IReadOnlyList<SimaiDiagnostic> simaiDiagnostics;
 
     bool _isBackToStartOnPlayStop = false;
     bool _isUpdatingAutoSaveContext = false;
@@ -582,7 +589,7 @@ public partial class MainWindowViewModel : ViewModelBase
         editor.SelectedText = SimaiMirror.HandleMirror(editor.SelectedText, SimaiMirror.HandleType.CcwRotation45);
     }
 
-    
+
     public async void PlayPause(TextEditor textEditor)
     {
         bool shouldRecoverPlayControl = true;
