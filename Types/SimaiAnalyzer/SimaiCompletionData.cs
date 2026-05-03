@@ -23,4 +23,27 @@ public class SimaiCompletionData(string text, string? description) : ICompletion
     {
         textArea.Document.Replace(completionSegment, Text);
     }
+
+    public static readonly Dictionary<char, SimaiCompletionData[]> SIMAI_COMPLETIONS = new()
+    {
+        { '[', new[]
+            {
+            new SimaiCompletionData("4:1]", null),
+            new SimaiCompletionData("8:1]", null),
+            new SimaiCompletionData("384:1]", null),
+            new SimaiCompletionData("1:0]", null),
+        }
+        },
+        { '{', new[]
+            {
+            new SimaiCompletionData("4}", null),
+            new SimaiCompletionData("3}", null),
+            new SimaiCompletionData("8}", null),
+            new SimaiCompletionData("16}", null),
+            new SimaiCompletionData("12}", null),
+            new SimaiCompletionData("384}", null),
+        }
+        }
+    };
 }
+

@@ -4,6 +4,7 @@ using Avalonia.Threading;
 using AvaloniaEdit;
 using AvaloniaEdit.CodeCompletion;
 using AvaloniaEdit.TextMate;
+using AvaloniaEdit.Utils;
 using MajdataEdit_Neo.Controls;
 using MajdataEdit_Neo.Models.SimaiChecker;
 using MajdataEdit_Neo.Types.SimaiAnalyzer;
@@ -39,7 +40,7 @@ public partial class MainWindow : Window
         var _install = TextMate.InstallTextMate(textEditor, _registryOptions);
         var registry = new Registry(_install.RegistryOptions);
         _install.SetGrammarFile(Path.Combine(AppDomain.CurrentDomain.BaseDirectory, "simai.tmLanguage.json"));
-        _debounceTimer = new DispatcherTimer{ Interval = TimeSpan.FromMilliseconds(300) };
+        _debounceTimer = new DispatcherTimer{ Interval = TimeSpan.FromMilliseconds(1145) };
         _debounceTimer.Tick += _debounceTimer_Tick;
         markerService = new TextMarkerService(textEditor.Document, textEditor.TextArea.TextView);
         textEditor.TextArea.TextView.BackgroundRenderers.Add(markerService);
@@ -194,17 +195,13 @@ public partial class MainWindow : Window
 
     private void TextEditor_TextArea_TextEntered(object? sender, Avalonia.Input.TextInputEventArgs e)
     {
-        if (e.Text == "[")
+        if (SimaiCompletionData.SIMAI_COMPLETIONS.ContainsKey(e.Text?[0] ?? '\0'))
         {
-            // Show code completion when a 'h' is typed
             var completionWindow = new CompletionWindow(textEditor.TextArea);
             completionWindow.Closed += (o, args) => completionWindow = null;
 
             var data = completionWindow.CompletionList.CompletionData;
-            data.Add(new SimaiCompletionData("4:1]", null));
-            data.Add(new SimaiCompletionData("8:1]", null));
-            data.Add(new SimaiCompletionData("384:1]", null));
-            data.Add(new SimaiCompletionData("1:0]", null));
+            data.AddRange(SimaiCompletionData.SIMAI_COMPLETIONS[e.Text![0]]);
 
             completionWindow.Show();
         }
