@@ -15,27 +15,29 @@ public class MajViewSetting
     public float BackgroundDim { get; set; } = 0.7f;
 
     [SettingControl(SettingControlType.Selection,
-        Values = new object[] { EditorComboIndicator.None, 
-                                EditorComboIndicator.Combo, 
-                                EditorComboIndicator.ScoreClassic, 
-                                EditorComboIndicator.AchievementClassic, 
-                                EditorComboIndicator.AchievementDownClassic, 
-                                EditorComboIndicator.AchievementDeluxe, 
-                                EditorComboIndicator.AchievementDownDeluxe, 
-                                EditorComboIndicator.ScoreDeluxe,
-                                EditorComboIndicator.CScoreDedeluxe,
-                                EditorComboIndicator.CScoreDownDedeluxe},
+        Values = new object[] { BgInfoDisplay.None, 
+                                BgInfoDisplay.Combo, 
+                                BgInfoDisplay.Achievement, 
+                                BgInfoDisplay.Achievement_100, 
+                                BgInfoDisplay.Achievement_101, 
+                                BgInfoDisplay.AchievementClassical, 
+                                BgInfoDisplay.AchievementClassical_100, 
+                                BgInfoDisplay.DXScore,
+                                BgInfoDisplay.S_Border,
+                                BgInfoDisplay.SS_Border,
+                                BgInfoDisplay.SSS_Border},
         Labels = new[] {        "None", 
                                 "Combo",
-                                "Score (Classic)",
+                                "Achievement + (Deluxe)",
+                                "Achievement - (Deluxe, 100)",
+                                "Achievement - (Deluxe, 101)",
                                 "Achievement + (Classic)",
-                                "Achievement - (Classic)", 
-                                "Achievement + (Deluxe)", 
-                                "Achievement - (Deluxe)", 
+                                "Achievement - (Classic, 100)",
                                 "Deluxe Score",
-                                "Normalized Score +",
-                                "Normalized Score -"})]
-    public EditorComboIndicator ComboStatusType { get; set; } = EditorComboIndicator.Combo;
+                                "S Border",
+                                "SS Border",
+                                "SSS Border"})]
+    public BgInfoDisplay ComboStatusType { get; set; } = BgInfoDisplay.Combo;
 
 
     [SettingControl(SettingControlType.Selection,
@@ -69,24 +71,19 @@ public class MajViewSetting
     public UIType UIType { get; set; } = UIType.Legacy;
 }
 
-public enum EditorComboIndicator
+public enum BgInfoDisplay
 {
     None,
-
-    // List of viable indicators that won't be a static content.
-    // ScoreBorder, AchievementMaxDown, ScoreDownDeluxe are static.
     Combo,
-    ScoreClassic,
-    AchievementClassic,
-    AchievementDownClassic,
-    AchievementDeluxe = 11,
-    AchievementDownDeluxe,
-    ScoreDeluxe,
-
-    // Please prefix custom indicator with C
-    CScoreDedeluxe = 101,
-    CScoreDownDedeluxe,
-    MAX
+    Achievement_101,
+    Achievement_100,
+    Achievement,
+    AchievementClassical,
+    AchievementClassical_100,
+    DXScore,
+    S_Border,
+    SS_Border,
+    SSS_Border,
 }
 
 public enum UIType
