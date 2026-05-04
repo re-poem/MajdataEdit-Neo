@@ -945,6 +945,18 @@ public partial class MainWindowViewModel : ViewModelBase
         SaveSettings(); // 覆盖旧版本setting
     }
 
+    public void SetWindowLastState(Window window)
+    {
+         Settings.WindowSetting = new MajWindowSetting
+         {
+             Width = window.Bounds.Width,
+             Height = window.Bounds.Height,
+             PosX = window.Position.X,
+             PosY = window.Position.Y
+         };
+        SaveSettings();
+    }
+
     private void SaveSettings()
     {
         File.WriteAllText(SETTINGS_FILENAME, JsonConvert.SerializeObject(Settings, Formatting.Indented));

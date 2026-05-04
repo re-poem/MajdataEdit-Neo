@@ -1,3 +1,4 @@
+using Avalonia;
 using Avalonia.Controls;
 using Avalonia.Interactivity;
 using Avalonia.Threading;
@@ -7,6 +8,7 @@ using AvaloniaEdit.TextMate;
 using AvaloniaEdit.Utils;
 using MajdataEdit_Neo.Controls;
 using MajdataEdit_Neo.Models.SimaiChecker;
+using MajdataEdit_Neo.Types.MajSetting;
 using MajdataEdit_Neo.Types.SimaiAnalyzer;
 using MajdataEdit_Neo.ViewModels;
 using System;
@@ -64,12 +66,17 @@ public partial class MainWindow : Window
 
     private async void MainWindow_Loaded(object? sender, RoutedEventArgs e)
     {
+        var setting = viewModel.Settings.WindowSetting;
+        this.Position = new PixelPoint(setting.PosX, setting.PosY);
+        this.Width = setting.Width;
+        this.Height = setting.Height;
         await viewModel.ConnectToPlayerAsync();
     }
 
     bool haveAsked = false;
     private async void MainWindow_Closing(object? sender, WindowClosingEventArgs e)
     {
+        viewModel.SetWindowLastState(this);
         if (haveAsked) return;
         e.Cancel = true;
         haveAsked = true;

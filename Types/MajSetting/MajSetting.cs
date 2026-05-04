@@ -13,4 +13,7 @@ public class MajSetting
 
     [Display(Name = nameof(Langs.Cat_VolumeSetting))]
     public MajVolumeSetting VolumeSetting { get; set; } = new();
+
+    [SettingUnbrowsable]
+    public MajWindowSetting WindowSetting { get; set; } = new();
 }
