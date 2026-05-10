@@ -280,8 +280,8 @@
 			<Button IsVisible="False" HotKey="Ctrl+O" Command="{Binding OpenFile}"/>
 			<Button IsVisible="False" IsEnabled="{Binding IsPlayControlEnabled}" HotKey="Ctrl+Shift+C" Command="{Binding PlayStop}" CommandParameter="{Binding #Editor}"/>
 		</Grid>
-		<Grid ZIndex="50" IsVisible="{Binding IsPopupOpen}" Background="#66000000">
-			<Border HorizontalAlignment="Stretch" VerticalAlignment="Stretch" Background="Transparent"
+		<Grid ZIndex="50" IsVisible="{Binding IsPopupOpen}">
+			<Border HorizontalAlignment="Stretch" VerticalAlignment="Stretch" Background="#01000000"
 					PointerPressed="PopupBackdrop_PointerPressed"/>
 
 			<Border HorizontalAlignment="Center" VerticalAlignment="Center" CornerRadius="14" ClipToBounds="True"
@@ -289,10 +289,11 @@
 				<Panel>
 					<ExperimentalAcrylicBorder IsHitTestVisible="False">
 						<ExperimentalAcrylicBorder.Material>
-							<ExperimentalAcrylicMaterial BackgroundSource="Digger"
-												  TintColor="#171717"
-												  TintOpacity="0.88"
-												  MaterialOpacity="0.68" />
+							<ExperimentalAcrylicMaterial
+								BackgroundSource="Digger"
+								TintColor="Black"
+								TintOpacity="1"
+								MaterialOpacity="0.75" />
 						</ExperimentalAcrylicBorder.Material>
 					</ExperimentalAcrylicBorder>
 
