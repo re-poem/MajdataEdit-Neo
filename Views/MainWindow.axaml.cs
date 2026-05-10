@@ -1,5 +1,6 @@
 using Avalonia;
 using Avalonia.Controls;
+using Avalonia.Input;
 using Avalonia.Interactivity;
 using Avalonia.Threading;
 using AvaloniaEdit;
@@ -13,6 +14,7 @@ using MajdataEdit_Neo.Types.MajSetting;
 using MajdataEdit_Neo.Types.SimaiAnalyzer;
 using MajdataEdit_Neo.ViewModels;
 using System;
+using System.Collections.Generic;
 using System.Diagnostics;
 using System.IO;
 using System.Linq;
@@ -31,6 +33,8 @@ public partial class MainWindow : Window
 
     DispatcherTimer _debounceTimer;
     string? _currentTooltipMessage;
+    private List<double> popupBpms = new();
+    private DateTime popupLastTapTime = DateTime.MinValue;
     public MainWindow()
     {
         //pull up MajdataView
@@ -76,6 +80,39 @@ public partial class MainWindow : Window
         this.LostFocus += MainWindow_LostFocus;
         this.Closing += MainWindow_Closing;
         this.Loaded += MainWindow_Loaded;
+    }
+
+
+    private void Tap_Button_Click(object? sender, RoutedEventArgs e)
+    {
+        if (popupLastTapTime != DateTime.MinValue)
+        {
+            var delta = (DateTime.Now - popupLastTapTime).TotalSeconds;
+            popupBpms.Add(60d / delta);
+        }
+
+        popupLastTapTime = DateTime.Now;
+        if (popupBpms.Count <= 0) return;
+        if (popupBpms.Count > 20)
+        {
+            popupBpms.Remove(popupBpms.Min());
+            popupBpms.Remove(popupBpms.Max());
+        }
+
+        var avg = popupBpms.Sum() / popupBpms.Count;
+        PopupTapButtonText.Content = string.Format("{0:N1}", avg);
+    }
+
+    private void Reset_Button_Click(object? sender, RoutedEventArgs e)
+    {
+        popupBpms = new List<double>();
+        popupLastTapTime = DateTime.MinValue;
+        PopupTapButtonText.Content = "Tap";
+    }
+
+    private void PopupBackdrop_PointerPressed(object? sender, PointerPressedEventArgs e)
+    {
+        viewModel.ClosePopup();
     }
 
     private async void MainWindow_Loaded(object? sender, RoutedEventArgs e)
