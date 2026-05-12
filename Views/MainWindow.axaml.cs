@@ -39,7 +39,8 @@ public partial class MainWindow : Window
             "MajdataView.exe");
 
         if (File.Exists(viewPath) &&
-            Process.GetProcessesByName("MajdataView").Length <= 0)
+            Process.GetProcessesByName("MajdataView").Length <= 0 &&
+            Process.GetProcessesByName("Unity").Length <= 0)
         {
             Process.Start(viewPath);
         }
