@@ -82,6 +82,15 @@ public static partial class ReadOnlySpanExtensions
     public static T LastOrDefault<T>(this ReadOnlySpan<T> span)
         => span.IsEmpty ? default! : span[^1];
 
+    public static T? LastOrDefault<T>(this ReadOnlySpan<T> span, Func<T, bool> predicate)
+    {
+        for (int i = span.Length - 1; i >= 0; i--)
+            if (predicate(span[i]))
+                return span[i];
+
+        return default;
+    }
+
     // ========================
     // Projection
     // ========================

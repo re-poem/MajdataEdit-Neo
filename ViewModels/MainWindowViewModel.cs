@@ -342,7 +342,7 @@ public partial class MainWindowViewModel : ViewModelBase
         if (timings.Length == 0) return new Point();
         var nearestNote = timings.MinBy(o => Math.Abs(o.Timing + Offset - time));
         if (nearestNote is null) return new Point();
-        return new Point(nearestNote.RawTextPositionX, nearestNote.RawTextPositionY);
+        return new Point(nearestNote.RawTextPositionX, nearestNote.RawTextPositionY - 1);
     }
     public async void SetCaretTime(int rawPostion, bool setTrackTime)
     {
@@ -368,7 +368,7 @@ public partial class MainWindowViewModel : ViewModelBase
         CaretCombo = currentCombo;
 
         //track time
-        if (IsFollowCursor|| setTrackTime) 
+        if (setTrackTime) 
         {
             //By pass Ctrl+Click if it's playing
             if (_playerConnection.ViewSummary.State == ViewStatus.Playing) return;
@@ -717,10 +717,10 @@ public partial class MainWindowViewModel : ViewModelBase
                 TrackTime = watch.ElapsedMilliseconds / 1000d + playStartTime;
                 if (IsFollowCursor)
                 {
-                    var nearestNote = CurrentChartData.CommaTimings.MinBy(o => Math.Abs(o.Timing + Offset - TrackTime));
+                    var nearestNote = CurrentChartData.CommaTimings.LastOrDefault(o => TrackTime - (o.Timing + Offset) > 0);
                     if (nearestNote is null) continue;
 
-                    var point = new Point(nearestNote.RawTextPositionX, nearestNote.RawTextPositionY);
+                    var point = new Point(nearestNote.RawTextPositionX, nearestNote.RawTextPositionY - 1);
                     await Dispatcher.UIThread.InvokeAsync(() =>
                     {
                         SeekToDocPos(point, _textEditor);
