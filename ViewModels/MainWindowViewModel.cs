@@ -35,6 +35,14 @@ using System.Threading.Tasks;
 
 namespace MajdataEdit_Neo.ViewModels;
 
+public enum MainWindowPopupKind
+{
+    None,
+    BpmTap,
+    ChartInfo,
+    Settings
+}
+
 public partial class MainWindowViewModel : ViewModelBase
 {
     //------control panel
@@ -193,6 +201,24 @@ public partial class MainWindowViewModel : ViewModelBase
             Debug.WriteLine(ex);
         }
     }
+    //------popups
+    [ObservableProperty]
+    [NotifyPropertyChangedFor(nameof(IsPopupOpen))]
+    [NotifyPropertyChangedFor(nameof(IsBpmTapPopupOpen))]
+    [NotifyPropertyChangedFor(nameof(IsChartInfoPopupOpen))]
+    [NotifyPropertyChangedFor(nameof(IsSettingsPopupOpen))]
+    public partial MainWindowPopupKind ActivePopup { get; set; } = MainWindowPopupKind.None;
+    public bool IsPopupOpen => ActivePopup != MainWindowPopupKind.None;
+    public bool IsBpmTapPopupOpen => ActivePopup == MainWindowPopupKind.BpmTap;
+    public bool IsChartInfoPopupOpen => ActivePopup == MainWindowPopupKind.ChartInfo;
+    public bool IsSettingsPopupOpen => ActivePopup == MainWindowPopupKind.Settings;
+
+    [ObservableProperty]
+    public partial ChartInfoViewModel? ChartInfoPopupViewModel { get; set; }
+
+    [ObservableProperty]
+    public partial SettingsViewModel? SettingsPopupViewModel { get; set; }
+
     //------connection
     public bool IsConnected
     {
@@ -514,15 +540,13 @@ public partial class MainWindowViewModel : ViewModelBase
     }
     public void OpenBpmTapWindow()
     {
-        new BpmTapWindow().Show();
+        ActivePopup = MainWindowPopupKind.BpmTap;
     }
-    public async void OpenChartInfoWindow()
+    public void OpenChartInfoWindow()
     {
         if (CurrentSimaiFile is null) return;
-        var mainWindow = Application.Current?.ApplicationLifetime as IClassicDesktopStyleApplicationLifetime;
-        if (mainWindow is null || mainWindow.MainWindow is null) return;
-        var window = new ChartInfoWindow();
-        window.DataContext = new ChartInfoViewModel()
+
+        ChartInfoPopupViewModel = new ChartInfoViewModel
         {
             Title = CurrentSimaiFile.Title,
             Artist = CurrentSimaiFile.Artist,
@@ -530,33 +554,45 @@ public partial class MainWindowViewModel : ViewModelBase
             SimaiCommands = new ObservableCollection<SimaiCommand>(CurrentSimaiFile.Commands),
             MaidataDir = _maidataDir
         };
-        await window.ShowDialog(mainWindow.MainWindow);
-        var datacontext = window.DataContext as ChartInfoViewModel;
-        if (datacontext is null) throw new Exception("Wtf");
-        CurrentSimaiFile.Title = datacontext.Title;
-        CurrentSimaiFile.Artist = datacontext.Artist;
-        CurrentSimaiFile.FinalDesigner = datacontext.FinalDesigner;
+        ActivePopup = MainWindowPopupKind.ChartInfo;
+    }
+    public void OpenSettingsWindow()
+    {
+        var settingsViewModel = new SettingsViewModel();
+        settingsViewModel.LoadSettings(Settings);
+        SettingsPopupViewModel = settingsViewModel;
+        ActivePopup = MainWindowPopupKind.Settings;
+    }
+    public async void ClosePopup()
+    {
+        switch (ActivePopup)
+        {
+            case MainWindowPopupKind.ChartInfo:
+                await ApplyChartInfoPopupAsync();
+                break;
+            case MainWindowPopupKind.Settings:
+                SaveSettings();
+                break;
+        }
+
+        ActivePopup = MainWindowPopupKind.None;
+    }
+    private async Task ApplyChartInfoPopupAsync()
+    {
+        if (CurrentSimaiFile is null || ChartInfoPopupViewModel is null) return;
+
+        CurrentSimaiFile.Title = ChartInfoPopupViewModel.Title;
+        CurrentSimaiFile.Artist = ChartInfoPopupViewModel.Artist;
+        CurrentSimaiFile.FinalDesigner = ChartInfoPopupViewModel.FinalDesigner;
         CurrentSimaiFile.Commands.Clear();
-        foreach (var item in datacontext.SimaiCommands)
-            CurrentSimaiFile.Commands.Add(item);
+        if (ChartInfoPopupViewModel.SimaiCommands is not null)
+        {
+            foreach (var item in ChartInfoPopupViewModel.SimaiCommands)
+                CurrentSimaiFile.Commands.Add(item);
+        }
         await Task.Delay(100);
         OnPropertyChanged(nameof(CurrentSimaiFile));
         await EditorLoad();
-    }
-    public async void OpenSettingsWindow()
-    {
-        var mainWindow = Application.Current?.ApplicationLifetime as IClassicDesktopStyleApplicationLifetime;
-        if (mainWindow is null || mainWindow.MainWindow is null) return;
-
-        var settingsViewModel = new SettingsViewModel();
-        settingsViewModel.LoadSettings(Settings);
-        var window = new SettingsWindow
-        {
-            DataContext = settingsViewModel
-        };
-        await window.ShowDialog(mainWindow.MainWindow);
-        SaveSettings();
-        await Task.Delay(1);
     }
     public void MirrorHorizontal(TextEditor editor)
     {

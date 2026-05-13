@@ -12,7 +12,7 @@ using System.Threading.Tasks;
 
 namespace MajdataEdit_Neo.ViewModels;
 
-partial class ChartInfoViewModel : ViewModelBase
+public partial class ChartInfoViewModel : ViewModelBase
 {
     [ObservableProperty]
     private string? title;
