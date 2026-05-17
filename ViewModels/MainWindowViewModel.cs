@@ -578,7 +578,14 @@ public partial class MainWindowViewModel : ViewModelBase
     {
         editor.SelectedText = SimaiMirror.HandleMirror(editor.SelectedText, SimaiMirror.HandleType.CcwRotation45);
     }
-
+    public void Subdivide1p5x(TextEditor editor)
+    {
+        editor.SelectedText = SimaiSubdivide.Subdivide(editor.SelectedText, 1.5f);
+    }
+    public void Subdivide2x(TextEditor editor)
+    {
+        editor.SelectedText = SimaiSubdivide.Subdivide(editor.SelectedText, 2f);
+    }
 
     public async void PlayPause(TextEditor textEditor)
     {
