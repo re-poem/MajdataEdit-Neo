@@ -125,7 +125,10 @@ public static class SimaiChecker
         
         if (IsInsideHsDefinition(beforeContext, afterContext))
             return false;
-        
+
+        if (IsInsideSvDefinition(beforeContext, afterContext)) 
+            return false;
+
         if (IsInsideBeatDefinition(beforeContext, afterContext))
             return false;
         
@@ -179,6 +182,21 @@ public static class SimaiChecker
         return true;
     }
 
+    private static bool IsInsideSvDefinition(string before, string after)
+    {
+        var lastSvStart = before.LastIndexOf("<SV*");
+        if (lastSvStart == -1) return false;
+
+        var afterSvStart = before[lastSvStart..];
+        var lastCloseAngle = afterSvStart.LastIndexOf('>');
+        if (lastCloseAngle != -1) return false;
+
+        var closeAngleAfter = after.IndexOf('>');
+        if (closeAngleAfter == -1) return true;
+
+        return true;
+    }
+
     private static bool IsInsideBeatDefinition(string before, string after)
     {
         var lastOpenBrace = before.LastIndexOf('{');
@@ -210,6 +228,7 @@ public static class SimaiChecker
         if (afterTrimmed.StartsWith("(") || 
             afterTrimmed.StartsWith("{") || 
             afterTrimmed.StartsWith("<HS*") ||
+            afterTrimmed.StartsWith("<SV*") ||
             afterTrimmed.StartsWith("E") ||
             afterTrimmed.StartsWith("||"))
             return false;
@@ -387,6 +406,29 @@ public static class SimaiChecker
                 }
             }
 
+            if (content.StartsWith("<SV*"))
+            {
+                var remaining = CheckSVelocSyntax(context, content, checkingStartPos);
+                processedOriginalLength += content.Length - remaining.Length;
+                content = remaining;
+                noteStart = processedOriginalLength;
+                if (string.IsNullOrEmpty(content)) return;
+                processedSomething = true;
+            }
+            else if (content.Contains("<SV*"))
+            {
+                var idx = content.IndexOf("<SV*");
+                var svelocEnd = content.IndexOf('>', idx);
+                if (svelocEnd != -1)
+                {
+                    CheckSVelocSyntax(context, content[idx..], checkingStartPos.Advance(segment.Content[processedOriginalLength..idx]));
+                    processedOriginalLength += svelocEnd + 1;
+                    content = content[(svelocEnd + 1)..];
+                    noteStart = processedOriginalLength;
+                    processedSomething = true;
+                }
+            }
+
             if (content.StartsWith('('))
             {
                 var bpmEnd = content.IndexOf(')');
@@ -501,6 +543,45 @@ public static class SimaiChecker
         }
 
         return content[(hspeedEnd + 1)..];
+    }
+
+    private static string CheckSVelocSyntax(CheckerContext context, string content, TextPosition startPos)
+    {
+        var svelocEnd = content.IndexOf('>');
+        if (svelocEnd == -1)
+        {
+            context.AddError(
+                "SVeloc definition not closed",
+                "SVeloc must be enclosed in angle brackets, e.g., <SV*1.5>",
+                startPos,
+                1
+            );
+            return content;
+        }
+
+        var svelocContent = content[4..svelocEnd];
+        if (string.IsNullOrEmpty(svelocContent))
+        {
+            context.AddError(
+                "Empty SVeloc value",
+                "SVeloc value cannot be empty",
+                startPos,
+                4
+            );
+            return content[(svelocEnd + 1)..];
+        }
+
+        if (!double.TryParse(svelocContent, NumberStyles.Float, CultureInfo.InvariantCulture, out _))
+        {
+            context.AddError(
+                $"Invalid SVeloc value: '{svelocContent}'",
+                "SVeloc must be a number",
+                startPos.Advance("<SV*"),
+                svelocContent.Length
+            );
+        }
+
+        return content[(svelocEnd + 1)..];
     }
 
     private static void CheckBpmDefinition(CheckerContext context, string content, TextPosition startPos)
