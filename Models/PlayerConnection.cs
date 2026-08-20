@@ -49,6 +49,9 @@ internal class PlayerConnection : IDisposable, IAsyncDisposable
     public event NotifyViewStateChangedEventHandler? OnPlayStopped;
     public event EventHandler<ViewStatus>? OnViewStateChanged;
 
+    public delegate void NotifyViewErrorEventHandler(object sender, string? error);
+    public event NotifyViewErrorEventHandler? OnViewError;
+
     public event EventHandler? OnLoadRequired;
     public event EventHandler? OnStopRequired;
     public event EventHandler? OnLoadFinished;
@@ -342,13 +345,7 @@ internal class PlayerConnection : IDisposable, IAsyncDisposable
                 break;
             case MajWsResponseType.Error:
                 OnViewStateChanged?.Invoke(this, State);
-                await Dispatcher.UIThread.InvokeAsync(async () =>
-                {
-                    await MessageBox.ShowAsync(
-                        resp.Error ?? "Unknown Error",
-                        "Error",
-                        icon: Icon.Error);
-                });
+                OnViewError?.Invoke(this, resp.Error);
                 break;
         }
     }

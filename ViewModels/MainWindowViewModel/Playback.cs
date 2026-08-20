@@ -85,6 +85,7 @@ public partial class MainWindowViewModel
         _playerConnection.OnLoadRequired += OnLoadRequired;
         _playerConnection.OnStopRequired += OnStopRequired;
         _playerConnection.OnDisconnected += OnDisconnected;
+        _playerConnection.OnViewError += OnViewError;
         _playerConnection.OnViewStateChanged += OnViewStateChanged;
 
         Directory.CreateDirectory(MajEnv.MajdataViewPersistentDataPath);
@@ -509,6 +510,12 @@ public partial class MainWindowViewModel
     private void OnViewStateChanged(object? sender, ViewStatus e)
     {
         Dispatcher.UIThread.Post(() => CurrentViewState = e);
+    }
+    private async void OnViewError(object? sender, string? error)
+    {
+        ShowStatusMessage(error ?? string.Empty);
+        await Task.Delay(3000);
+        ResetStatusMessage();
     }
 
     //------playback tracking
