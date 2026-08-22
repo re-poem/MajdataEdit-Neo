@@ -74,15 +74,17 @@ public partial class MainWindow : Window
         Console.WriteLine(MajBase);
 
         var isMac = OperatingSystem.IsMacOS();
-        var isLinux = OperatingSystem.IsLinux();
-
         //pull up MajdataView
-        var viewPath = GetPath(isMac || isLinux ? "MajdataViewX" : "MajdataViewX.exe");
+        var viewPath = MajdataViewExecutableFile;
         if (File.Exists(viewPath) &&
             Process.GetProcessesByName("MajdataViewX").Length <= 0 &&
             Process.GetProcessesByName("Unity").Length <= 0)
         {
-            Process.Start(viewPath);
+            Process.Start(new ProcessStartInfo
+            {
+                FileName = viewPath,
+                WorkingDirectory = Path.GetDirectoryName(viewPath)!
+            });
         }
 
         // 补齐mac环境变量
@@ -706,4 +708,3 @@ public partial class MainWindow : Window
         }
     }
 }
-

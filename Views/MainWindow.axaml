@@ -1,6 +1,7 @@
 <Window xmlns="https://github.com/avaloniaui"
 		xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
 		xmlns:AvaloniaEdit="clr-namespace:AvaloniaEdit;assembly=AvaloniaEdit"
+		xmlns:base="using:MajdataEdit_Neo.Base"
 		xmlns:controls="clr-namespace:MajdataEdit_Neo.Controls"
 		xmlns:conv="using:MajdataEdit_Neo.Converters"
 		xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
@@ -58,7 +59,7 @@
 					<Separator/>
 					<MenuItem Header="{local:I18N Win_Recover}" Command="{Binding OpenRecoverWindow}"/>
 					<Separator/>
-					<MenuItem Header="{local:I18N Gui_ExportVideo}" Command="{Binding PlayRecordCommand}"/>
+					<MenuItem Header="{local:I18N Gui_ExportVideo}" Command="{Binding PlayRecordCommand}" IsVisible="{x:Static base:MajEnv.IsRecordingSupported}"/>
 				</MenuItem>
 				<MenuItem x:Name="EditMenu" Header="{local:I18N Gui_Edit}">
 					<MenuItem Header="{local:I18N Gui_ChartInfo}" Command="{Binding OpenChartInfoWindow}"/>
@@ -258,7 +259,6 @@
 
 	</Panel>
 </Window>
-
 
 
 

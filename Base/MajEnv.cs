@@ -14,6 +14,25 @@ public static partial class MajEnv
 
     public static string MajBase => AppDomain.CurrentDomain.BaseDirectory;
     public static string GetPath(string relativePath) => Path.Combine(MajBase, relativePath);
+    public static string UserDataDir
+    {
+        get
+        {
+            if (OperatingSystem.IsWindows())
+                return MajBase;
+
+            var path = Path.Combine(
+                Environment.GetFolderPath(Environment.SpecialFolder.ApplicationData),
+                "MajdataEdit-Neo");
+            Directory.CreateDirectory(path);
+            return path;
+        }
+    }
+    public static string GetUserDataPath(string relativePath) => Path.Combine(UserDataDir, relativePath);
+
+    public static string MajdataViewExecutableFile => OperatingSystem.IsMacOS()
+        ? GetPath("../Helpers/MajdataViewX.app/Contents/MacOS/MajdataViewX")
+        : GetPath(OperatingSystem.IsWindows() ? "MajdataViewX.exe" : "MajdataViewX");
 
     public static string MajdataViewPersistentDataPath
     {
@@ -74,7 +93,7 @@ public static partial class MajEnv
             }
             else if (OperatingSystem.IsMacOS())
             {
-                return GetPath("..\\..\\..\\runtimes\\osx\\native\\libbass.dylib");
+                return GetPath("../../../runtimes/osx/native/libbass.dylib");
             }
             else if (OperatingSystem.IsLinux())
             {
@@ -91,7 +110,7 @@ public static partial class MajEnv
             }
             else if (OperatingSystem.IsMacOS())
             {
-                return GetPath("MajdataViewX_Data/Plugins/x86_64/libbass.dylib");
+                return GetPath("../Helpers/MajdataViewX.app/Contents/PlugIns/libbass.dylib");
             }
             else if (OperatingSystem.IsLinux())
             {
@@ -105,10 +124,12 @@ public static partial class MajEnv
         }
     }
 
-    public static string SettingsFile => GetPath("Settings.json");
-    public static string CrashFile => GetPath("crash.log");
-    public static string DatabaseFile => GetPath("editor.db");
+    public static string SettingsFile => GetUserDataPath("Settings.json");
+    public static string CrashFile => GetUserDataPath("crash.log");
+    public static string DatabaseFile => GetUserDataPath("editor.db");
+    public static string GlobalAutoSaveDir => GetUserDataPath(".autosave");
     public static string CompletionFile => GetPath("completions.json");
+    public static bool IsRecordingSupported => OperatingSystem.IsWindows();
 
     public static void ActivateProcessWindow(Process? process)
     {
@@ -136,7 +157,6 @@ public static partial class MajEnv
     }
 
     //尽量少使用预编译，不指望到了每个平台再来纠正编译错误，只有必要场合/性能热点使用
-#if WINDOWS
     [LibraryImport("user32.dll")]
     [return: MarshalAs(UnmanagedType.Bool)]
     private static partial bool SetForegroundWindow(IntPtr hWnd);
@@ -144,7 +164,6 @@ public static partial class MajEnv
     [LibraryImport("user32.dll")]
     [return: MarshalAs(UnmanagedType.Bool)]
     private static partial bool ShowWindow(IntPtr hWnd, int nCmdShow);
-#endif
 
     public static readonly string MAJDATA_VERSION_STRING = $"v{Assembly.GetExecutingAssembly().GetName().Version!.ToString(3)}";
     public static readonly SemVersion MAJDATA_VERSION = SemVersion.Parse(MAJDATA_VERSION_STRING, SemVersionStyles.Any);
