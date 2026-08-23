@@ -14,18 +14,52 @@ public static partial class MajEnv
 
     public static string MajBase => AppDomain.CurrentDomain.BaseDirectory;
     public static string GetPath(string relativePath) => Path.Combine(MajBase, relativePath);
-    public static string UserDataDir
-    {
-        get
-        {
-            if (OperatingSystem.IsWindows())
-                return MajBase;
+    public static string UserDataDir { get; } = InitializeUserDataDir();
 
-            var path = Path.Combine(
-                Environment.GetFolderPath(Environment.SpecialFolder.ApplicationData),
-                "MajdataEdit-Neo");
-            Directory.CreateDirectory(path);
-            return path;
+    private static string InitializeUserDataDir()
+    {
+        if (OperatingSystem.IsWindows())
+            return MajBase;
+
+        var path = Path.Combine(
+            Environment.GetFolderPath(Environment.SpecialFolder.ApplicationData),
+            "MajdataEdit-Neo");
+        Directory.CreateDirectory(path);
+        MigrateLegacyUserData(MajBase, path);
+        return path;
+    }
+
+    private static void MigrateLegacyUserData(string legacyDir, string userDataDir)
+    {
+        foreach (var fileName in new[]
+                 {
+                     "Settings.json", "crash.log", "editor.db", "editor.db-wal", "editor.db-shm"
+                 })
+        {
+            var source = Path.Combine(legacyDir, fileName);
+            var destination = Path.Combine(userDataDir, fileName);
+            if (File.Exists(source) && !File.Exists(destination))
+                File.Copy(source, destination);
+        }
+
+        var legacyAutoSaveDir = Path.Combine(legacyDir, ".autosave");
+        if (!Directory.Exists(legacyAutoSaveDir))
+            return;
+
+        foreach (var source in Directory.EnumerateFiles(
+                     legacyAutoSaveDir,
+                     "*",
+                     SearchOption.AllDirectories))
+        {
+            var destination = Path.Combine(
+                userDataDir,
+                ".autosave",
+                Path.GetRelativePath(legacyAutoSaveDir, source));
+            if (File.Exists(destination))
+                continue;
+
+            Directory.CreateDirectory(Path.GetDirectoryName(destination)!);
+            File.Copy(source, destination);
         }
     }
     public static string GetUserDataPath(string relativePath) => Path.Combine(UserDataDir, relativePath);
