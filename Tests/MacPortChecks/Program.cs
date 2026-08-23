@@ -1,6 +1,8 @@
 using MajdataEdit_Neo.Base;
 using MajdataEdit_Neo.Utils;
+using Microsoft.Data.Sqlite;
 using System.Reflection;
+using System.Text.Json;
 
 static void Check(bool condition, string message)
 {
@@ -33,11 +35,37 @@ var migratedDir = Path.Combine(migrationRoot, "migrated");
 try
 {
     Directory.CreateDirectory(Path.Combine(legacyDir, ".autosave", "chart"));
-    Directory.CreateDirectory(migratedDir);
+    Directory.CreateDirectory(Path.Combine(migratedDir, ".autosave"));
     File.WriteAllText(Path.Combine(legacyDir, "Settings.json"), "legacy");
     File.WriteAllText(Path.Combine(migratedDir, "Settings.json"), "current");
-    File.WriteAllText(Path.Combine(legacyDir, "editor.db"), "database");
-    File.WriteAllText(Path.Combine(legacyDir, ".autosave", "chart", "maidata.txt"), "autosave");
+    var legacyDatabase = Path.Combine(legacyDir, "editor.db");
+    var migratedDatabase = Path.Combine(migratedDir, "editor.db");
+    using (var connection = new SqliteConnection($"Data Source={legacyDatabase}"))
+    {
+        connection.Open();
+        using var command = connection.CreateCommand();
+        command.CommandText = "CREATE TABLE MigrationTest (Value TEXT); INSERT INTO MigrationTest VALUES ('legacy');";
+        command.ExecuteNonQuery();
+    }
+
+    var legacyAutoSave = Path.Combine(legacyDir, ".autosave", "chart", "maidata.txt");
+    var currentAutoSave = Path.Combine(migratedDir, ".autosave", "autosave.current.txt");
+    File.WriteAllText(legacyAutoSave, "autosave");
+    File.WriteAllText(currentAutoSave, "current autosave");
+    File.WriteAllText(
+        Path.Combine(legacyDir, ".autosave", ".index.json"),
+        JsonSerializer.Serialize(new
+        {
+            Count = 1,
+            FilesInfo = new[] { new { FileName = legacyAutoSave, RawPath = "legacy", SavedTime = 1 } }
+        }));
+    File.WriteAllText(
+        Path.Combine(migratedDir, ".autosave", ".index.json"),
+        JsonSerializer.Serialize(new
+        {
+            Count = 1,
+            FilesInfo = new[] { new { FileName = currentAutoSave, RawPath = "current", SavedTime = 2 } }
+        }));
 
     var migrate = typeof(MajEnv).GetMethod(
         "MigrateLegacyUserData",
@@ -49,16 +77,50 @@ try
         File.ReadAllText(Path.Combine(migratedDir, "Settings.json")) == "current",
         "Migration must not overwrite current user data.");
     Check(
-        File.ReadAllText(Path.Combine(migratedDir, "editor.db")) == "database",
+        ReadMigrationValue(migratedDatabase) == "legacy",
         "Migration must preserve the legacy edit database.");
     Check(
         File.ReadAllText(Path.Combine(migratedDir, ".autosave", "chart", "maidata.txt")) == "autosave",
         "Migration must preserve legacy global auto-saves.");
+
+    using (var index = JsonDocument.Parse(
+               File.ReadAllText(Path.Combine(migratedDir, ".autosave", ".index.json"))))
+    {
+        var files = index.RootElement.GetProperty("FilesInfo");
+        Check(files.GetArrayLength() == 2, "Migration must merge legacy and current auto-save indexes.");
+        Check(
+            files.EnumerateArray().Any(file =>
+                file.GetProperty("FileName").GetString() ==
+                Path.Combine(migratedDir, ".autosave", "chart", "maidata.txt")),
+            "Migration must rewrite legacy auto-save paths.");
+    }
+
+    using (var connection = new SqliteConnection($"Data Source={migratedDatabase}"))
+    {
+        connection.Open();
+        using var command = connection.CreateCommand();
+        command.CommandText = "UPDATE MigrationTest SET Value = 'current'";
+        command.ExecuteNonQuery();
+    }
+    File.WriteAllText(legacyDatabase + "-wal", "stale");
+    migrate.Invoke(null, [legacyDir, migratedDir]);
+    Check(
+        ReadMigrationValue(migratedDatabase) == "current" && !File.Exists(migratedDatabase + "-wal"),
+        "Migration must never replay legacy SQLite sidecars after the database is migrated.");
 }
 finally
 {
     if (Directory.Exists(migrationRoot))
         Directory.Delete(migrationRoot, recursive: true);
+}
+
+static string ReadMigrationValue(string path)
+{
+    using var connection = new SqliteConnection($"Data Source={path}");
+    connection.Open();
+    using var command = connection.CreateCommand();
+    command.CommandText = "SELECT Value FROM MigrationTest";
+    return (string)command.ExecuteScalar()!;
 }
 
 if (OperatingSystem.IsMacOS())
