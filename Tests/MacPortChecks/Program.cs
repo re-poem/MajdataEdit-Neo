@@ -1,4 +1,5 @@
 using MajdataEdit_Neo.Base;
+using MajdataEdit_Neo.Utils;
 
 static void Check(bool condition, string message)
 {
@@ -27,6 +28,13 @@ Check(
 
 if (OperatingSystem.IsMacOS())
 {
+    Check(
+        FFmpegChecker.ExecutablePath == "/opt/homebrew/opt/ffmpeg-full/bin/ffmpeg",
+        "macOS must use Homebrew ffmpeg-full directly because it is keg-only.");
+    Check(
+        FFmpegChecker.MissingMessage.Contains("brew install ffmpeg-full", StringComparison.Ordinal),
+        "The missing FFmpeg message must include the Homebrew install command.");
+
     var viewApp = Path.GetFullPath(Path.Combine(MajEnv.MajBase, "..", "Helpers", "MajdataViewX.app"));
     Check(
         Path.GetFullPath(MajEnv.MajdataViewExecutableFile) ==

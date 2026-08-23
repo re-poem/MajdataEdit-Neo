@@ -76,7 +76,7 @@ public partial class MainWindowViewModel
         try
         {
             var completed = await Task.Run(
-                () => TrackProcessor.CompressVideo("ffmpeg", bgVideoPath, outputPath, operation.Token),
+                () => TrackProcessor.CompressVideo(ExecutablePath, bgVideoPath, outputPath, operation.Token),
                 operation.Token);
             if (!completed)
             {
@@ -146,7 +146,7 @@ public partial class MainWindowViewModel
             var completed = await Task.Run(() =>
             {
                 if (!TrackProcessor.AdjustMediaTime(
-                    "ffmpeg",
+                    ExecutablePath,
                     audioPath,
                     60.0 / bpm * beatsCount,
                     offset,
@@ -165,7 +165,7 @@ public partial class MainWindowViewModel
                 }
                 if (videoPath != null)
                     return TrackProcessor.AdjustMediaTime(
-                        "ffmpeg",
+                        ExecutablePath,
                         videoPath,
                         60.0 / bpm * beatsCount,
                         offset,
@@ -232,7 +232,7 @@ public partial class MainWindowViewModel
             var audioPath = Path.Combine(parent, "track.mp3");
             audioTempPath = Path.Combine(parent, $".track.{Guid.NewGuid():N}.tmp.mp3");
             var completed = await Task.Run(
-                () => TrackProcessor.ExtractAudio("ffmpeg", newFile, audioTempPath, operation.Token),
+                () => TrackProcessor.ExtractAudio(ExecutablePath, newFile, audioTempPath, operation.Token),
                 operation.Token);
             if (!completed)
             {

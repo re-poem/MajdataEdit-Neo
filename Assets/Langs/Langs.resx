@@ -337,7 +337,7 @@
     <value>No bg.mp4/pv.mp4 found</value>
   </data>
   <data name="Status_NoFfmpeg" xml:space="preserve">
-    <value>ffmpeg.exe not found, check if view is in the folder</value>
+    <value>A compatible FFmpeg installation was not found.</value>
   </data>
   <data name="Gui_CheckUpdate" xml:space="preserve">
     <value>Check Update</value>
