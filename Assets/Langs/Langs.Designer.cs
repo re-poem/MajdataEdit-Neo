@@ -1045,7 +1045,7 @@ namespace MajdataEdit_Neo.Assets.Langs {
         }
         
         /// <summary>
-        ///   查找类似 ffmpeg.exe not found, check if view is in the folder 的本地化字符串。
+        ///   查找类似 A compatible FFmpeg installation was not found. 的本地化字符串。
         /// </summary>
         internal static string Status_NoFfmpeg {
             get {

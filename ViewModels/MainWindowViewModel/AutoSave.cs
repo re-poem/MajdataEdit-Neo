@@ -41,12 +41,10 @@ public partial class MainWindowViewModel
 
     private void InitializeAutoSave()
     {
-        var baseDirectory = MajEnv.MajBase;
-        ArgumentException.ThrowIfNullOrWhiteSpace(baseDirectory);
         _localContext = new InternalAutoSaveContext(_contentProvider);
         _globalContext = new InternalAutoSaveContext(_contentProvider)
         {
-            WorkingPath = Path.Combine(Path.GetFullPath(baseDirectory), ".autosave")
+            WorkingPath = MajEnv.GlobalAutoSaveDir
         };
         AutoSaveManager.Initialize(_localContext, _globalContext);
         _manager = AutoSaveManager.Instance;

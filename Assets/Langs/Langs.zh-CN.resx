@@ -337,7 +337,7 @@
     <value>找不到bg.mp4/pv.mp4</value>
   </data>
   <data name="Status_NoFfmpeg" xml:space="preserve">
-    <value>找不到ffmpeg，请检查view是否在目录中</value>
+    <value>找不到兼容的 FFmpeg。</value>
   </data>
   <data name="Gui_CheckUpdate" xml:space="preserve">
     <value>检查更新</value>

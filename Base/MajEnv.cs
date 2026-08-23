@@ -1,9 +1,12 @@
+using Microsoft.Data.Sqlite;
 using Semver;
 using System;
+using System.Collections.Generic;
 using System.Diagnostics;
 using System.IO;
 using System.Reflection;
 using System.Runtime.InteropServices;
+using System.Text.Json.Nodes;
 
 namespace MajdataEdit_Neo.Base;
 
@@ -14,6 +17,153 @@ public static partial class MajEnv
 
     public static string MajBase => AppDomain.CurrentDomain.BaseDirectory;
     public static string GetPath(string relativePath) => Path.Combine(MajBase, relativePath);
+    public static string UserDataDir { get; } = InitializeUserDataDir();
+
+    private static string InitializeUserDataDir()
+    {
+        if (OperatingSystem.IsWindows())
+            return MajBase;
+
+        var path = Path.Combine(
+            Environment.GetFolderPath(Environment.SpecialFolder.ApplicationData),
+            "MajdataEdit-Neo");
+        Directory.CreateDirectory(path);
+        MigrateLegacyUserData(MajBase, path);
+        return path;
+    }
+
+    private static void MigrateLegacyUserData(string legacyDir, string userDataDir)
+    {
+        foreach (var fileName in new[] { "Settings.json", "crash.log" })
+        {
+            var source = Path.Combine(legacyDir, fileName);
+            var destination = Path.Combine(userDataDir, fileName);
+            if (File.Exists(source) && !File.Exists(destination))
+                File.Copy(source, destination);
+        }
+
+        MigrateLegacyDatabase(legacyDir, userDataDir);
+        MigrateLegacyAutoSaves(legacyDir, userDataDir);
+    }
+
+    private static void MigrateLegacyDatabase(string legacyDir, string userDataDir)
+    {
+        var source = Path.Combine(legacyDir, "editor.db");
+        var destination = Path.Combine(userDataDir, "editor.db");
+        if (!File.Exists(source) || File.Exists(destination))
+            return;
+
+        var temporary = destination + $".migration-{Guid.NewGuid():N}";
+        try
+        {
+            using (var sourceConnection = new SqliteConnection(
+                       new SqliteConnectionStringBuilder
+                       {
+                           DataSource = source,
+                           Mode = SqliteOpenMode.ReadWrite
+                       }.ToString()))
+            using (var destinationConnection = new SqliteConnection(
+                       new SqliteConnectionStringBuilder
+                       {
+                           DataSource = temporary,
+                           Mode = SqliteOpenMode.ReadWriteCreate
+                       }.ToString()))
+            {
+                sourceConnection.Open();
+                destinationConnection.Open();
+                sourceConnection.BackupDatabase(destinationConnection);
+            }
+
+            File.Move(temporary, destination);
+        }
+        finally
+        {
+            foreach (var suffix in new[] { "", "-wal", "-shm", "-journal" })
+                File.Delete(temporary + suffix);
+        }
+    }
+
+    private static void MigrateLegacyAutoSaves(string legacyDir, string userDataDir)
+    {
+        var legacyAutoSaveDir = Path.Combine(legacyDir, ".autosave");
+        if (!Directory.Exists(legacyAutoSaveDir))
+            return;
+
+        var destinationAutoSaveDir = Path.Combine(userDataDir, ".autosave");
+        foreach (var source in Directory.EnumerateFiles(
+                     legacyAutoSaveDir,
+                     "*",
+                     SearchOption.AllDirectories))
+        {
+            if (Path.GetFileName(source) == ".index.json")
+                continue;
+
+            var destination = Path.Combine(
+                destinationAutoSaveDir,
+                Path.GetRelativePath(legacyAutoSaveDir, source));
+            if (File.Exists(destination))
+                continue;
+
+            Directory.CreateDirectory(Path.GetDirectoryName(destination)!);
+            File.Copy(source, destination);
+        }
+
+        var legacyIndexPath = Path.Combine(legacyAutoSaveDir, ".index.json");
+        if (!File.Exists(legacyIndexPath))
+            return;
+
+        var destinationIndexPath = Path.Combine(destinationAutoSaveDir, ".index.json");
+        var destinationIndex = File.Exists(destinationIndexPath)
+            ? JsonNode.Parse(File.ReadAllText(destinationIndexPath))?.AsObject()
+            : new JsonObject();
+        var legacyIndex = JsonNode.Parse(File.ReadAllText(legacyIndexPath))?.AsObject();
+        if (destinationIndex is null || legacyIndex?["FilesInfo"] is not JsonArray legacyFiles)
+            throw new InvalidDataException("Invalid legacy auto-save index.");
+
+        if (destinationIndex["FilesInfo"] is not JsonArray destinationFiles)
+        {
+            destinationFiles = new JsonArray();
+            destinationIndex["FilesInfo"] = destinationFiles;
+        }
+
+        var indexedPaths = new HashSet<string>(StringComparer.Ordinal);
+        foreach (var entry in destinationFiles)
+        {
+            if (entry?["FileName"]?.GetValue<string>() is { } path)
+                indexedPaths.Add(path);
+        }
+
+        var legacyRoot = Path.GetFullPath(legacyAutoSaveDir) + Path.DirectorySeparatorChar;
+        foreach (var entry in legacyFiles)
+        {
+            if (entry is not JsonObject fileInfo ||
+                fileInfo["FileName"]?.GetValue<string>() is not { } sourcePath)
+                continue;
+
+            sourcePath = Path.GetFullPath(sourcePath);
+            if (!sourcePath.StartsWith(legacyRoot, StringComparison.Ordinal))
+                continue;
+
+            var destinationPath = Path.Combine(
+                destinationAutoSaveDir,
+                Path.GetRelativePath(legacyAutoSaveDir, sourcePath));
+            if (!File.Exists(destinationPath) || !indexedPaths.Add(destinationPath))
+                continue;
+
+            var migratedInfo = (JsonObject)fileInfo.DeepClone();
+            migratedInfo["FileName"] = destinationPath;
+            destinationFiles.Add(migratedInfo);
+        }
+
+        destinationIndex["Count"] = destinationFiles.Count;
+        Directory.CreateDirectory(destinationAutoSaveDir);
+        File.WriteAllText(destinationIndexPath, destinationIndex.ToJsonString());
+    }
+    public static string GetUserDataPath(string relativePath) => Path.Combine(UserDataDir, relativePath);
+
+    public static string MajdataViewExecutableFile => OperatingSystem.IsMacOS()
+        ? GetPath("../Helpers/MajdataViewX.app/Contents/MacOS/MajdataViewX")
+        : GetPath(OperatingSystem.IsWindows() ? "MajdataViewX.exe" : "MajdataViewX");
 
     public static string MajdataViewPersistentDataPath
     {
@@ -74,7 +224,7 @@ public static partial class MajEnv
             }
             else if (OperatingSystem.IsMacOS())
             {
-                return GetPath("..\\..\\..\\runtimes\\osx\\native\\libbass.dylib");
+                return GetPath("../../../runtimes/osx/native/libbass.dylib");
             }
             else if (OperatingSystem.IsLinux())
             {
@@ -91,7 +241,7 @@ public static partial class MajEnv
             }
             else if (OperatingSystem.IsMacOS())
             {
-                return GetPath("MajdataViewX_Data/Plugins/x86_64/libbass.dylib");
+                return GetPath("../Helpers/MajdataViewX.app/Contents/PlugIns/libbass.dylib");
             }
             else if (OperatingSystem.IsLinux())
             {
@@ -105,10 +255,12 @@ public static partial class MajEnv
         }
     }
 
-    public static string SettingsFile => GetPath("Settings.json");
-    public static string CrashFile => GetPath("crash.log");
-    public static string DatabaseFile => GetPath("editor.db");
+    public static string SettingsFile => GetUserDataPath("Settings.json");
+    public static string CrashFile => GetUserDataPath("crash.log");
+    public static string DatabaseFile => GetUserDataPath("editor.db");
+    public static string GlobalAutoSaveDir => GetUserDataPath(".autosave");
     public static string CompletionFile => GetPath("completions.json");
+    public static bool IsRecordingSupported => OperatingSystem.IsWindows();
 
     public static void ActivateProcessWindow(Process? process)
     {
@@ -136,7 +288,6 @@ public static partial class MajEnv
     }
 
     //尽量少使用预编译，不指望到了每个平台再来纠正编译错误，只有必要场合/性能热点使用
-#if WINDOWS
     [LibraryImport("user32.dll")]
     [return: MarshalAs(UnmanagedType.Bool)]
     private static partial bool SetForegroundWindow(IntPtr hWnd);
@@ -144,7 +295,6 @@ public static partial class MajEnv
     [LibraryImport("user32.dll")]
     [return: MarshalAs(UnmanagedType.Bool)]
     private static partial bool ShowWindow(IntPtr hWnd, int nCmdShow);
-#endif
 
     public static readonly string MAJDATA_VERSION_STRING = $"v{Assembly.GetExecutingAssembly().GetName().Version!.ToString(3)}";
     public static readonly SemVersion MAJDATA_VERSION = SemVersion.Parse(MAJDATA_VERSION_STRING, SemVersionStyles.Any);
