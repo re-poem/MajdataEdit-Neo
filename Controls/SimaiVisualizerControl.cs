@@ -7,7 +7,7 @@ using Avalonia.Skia;
 using Avalonia.Threading;
 using Avalonia.VisualTree;
 using MajdataEdit_Neo.Models;
-using MajSimai;
+using Cimai;
 using SkiaSharp;
 using System;
 using System.Collections.Generic;
@@ -17,9 +17,8 @@ using System.Threading;
 
 namespace MajdataEdit_Neo.Controls;
 
-class SimaiVisualizerControl : Control
+internal class SimaiVisualizerControl : Control
 {
-    private static readonly SimaiChart EmptyChart = SimaiChart.Empty;
     private readonly AnimationState _animationState = new();
     private RenderCache _renderCache = new();
     private bool _renderCacheDisposed;
@@ -233,7 +232,7 @@ class SimaiVisualizerControl : Control
     class CustomDrawOp : ICustomDrawOperation
     {
         private readonly TrackInfo _trackInfo;
-        private readonly SimaiChart _simaiChart;
+        private readonly SimaiChart? _simaiChart;
         private readonly List<(double, int, int)> _signatures;
         private readonly double _time;
         private readonly double _caretTime;
@@ -274,7 +273,7 @@ class SimaiVisualizerControl : Control
         static readonly SKColor GhostCursorColor = SKColors.Orange;
 
         public CustomDrawOp(Rect bounds,
-            TrackInfo trackInfo, double time, float zoomLevel, SimaiChart simaiChart, List<(double, int, int)> signatures,
+            TrackInfo trackInfo, double time, float zoomLevel, SimaiChart? simaiChart, List<(double, int, int)> signatures,
             float offset, double caretTime, bool isAnimated, AnimationState animationState,
             RenderCache renderCache, Action requestNextFrame)
         {
@@ -312,14 +311,14 @@ class SimaiVisualizerControl : Control
             return low;
         }
 
-        private static int LowerBound(ReadOnlySpan<SimaiTimingPoint> timings, double target)
+        private static int LowerBound(ReadOnlySpan<SimaiTiming> timings, double target)
         {
             var low = 0;
             var high = timings.Length;
             while (low < high)
             {
                 var middle = low + ((high - low) >> 1);
-                if (timings[middle].Timing < target)
+                if (timings[middle].Time < target)
                     low = middle + 1;
                 else
                     high = middle;
@@ -397,6 +396,8 @@ class SimaiVisualizerControl : Control
 
                 paint.IsAntialias = true;
 
+                if (_simaiChart == null) return;
+
                 //Draw Bpm Lines
                 var bpmChangeTimes = cache.BpmChangeTimes;
                 var bpmChangeValues = cache.BpmChangeValues;
@@ -421,11 +422,11 @@ class SimaiVisualizerControl : Control
                     bpmChangeValues.Clear();
 
                     //scan to get bpm change time and value
-                    foreach (var timing in _simaiChart.CommaTimings)
+                    foreach (var timing in _simaiChart.Timings)
                     {
                         if (timing.Bpm != lastbpm)
                         {
-                            bpmChangeTimes.Add(timing.Timing + _offset);
+                            bpmChangeTimes.Add(timing.Time + _offset);
                             bpmChangeValues.Add(timing.Bpm);
                             lastbpm = timing.Bpm;
                         }
@@ -506,59 +507,42 @@ class SimaiVisualizerControl : Control
                     canvas.DrawLine(x, 0, x, 10, paint);
                 }
 
-                //timing white line
-                paint.Color = TimingTickColor;
-                var commaTimings = _simaiChart.CommaTimings;
-                var firstCommaIndex = LowerBound(commaTimings, visibleStartTime - _offset);
-                for (var i = firstCommaIndex; i < commaTimings.Length; i++)
-                {
-                    var note = commaTimings[i];
-                    time = note.Timing + _offset;
-                    if (time > visibleEndTime) break;
-                    var x = (float)((time / step - virtualStartIndex) * linewidth);
-                    canvas.DrawLine(x, (float)height - 10, x, (float)height, paint);
-                }
-
                 paint.Color = CaretColor;
                 paint.StrokeWidth = 2;
                 canvas.DrawLine((float)width / 2, 15, (float)width / 2, (float)height - 15, paint);
 
                 paint.Style = SKPaintStyle.Stroke;
-                // Draw notes
-                var noteTimings = _simaiChart.NoteTimings;
-                var firstNoteIndex = LowerBound(noteTimings, visibleStartTime - _offset - 10.0);
-                for (var noteIndex = firstNoteIndex; noteIndex < noteTimings.Length; noteIndex++)
+                // Draw timing white lines + notes
+                var timings = _simaiChart.Timings;
+                var firstNoteIndex = LowerBound(timings, visibleStartTime - _offset - 10.0);
+                for (var noteIndex = firstNoteIndex; noteIndex < timings.Length; noteIndex++)
                 {
-                    var note = noteTimings[noteIndex];
-                    time = note.Timing + _offset;
+                    var timing = timings[noteIndex];
+                    time = timing.Time + _offset;
                     if (time > visibleEndTime) break;
-                    var notes = note.Notes;
+                    var notes = timing.Notes;
 
-                    // manual count non-slide-head notes
-                    var nonSlideHeadCount = 0;
-                    foreach (var n in notes)
-                        if (!n.IsSlideNoHead) nonSlideHeadCount++;
-                    var isEach = nonSlideHeadCount > 1;
-
-                    // manual count slide notes
-                    var slideCount = 0;
-                    foreach (var n in notes)
-                        if (n.Type == SimaiNoteType.Slide) slideCount++;
+                    //timing white line
+                    {
+                        paint.Color = TimingTickColor;
+                        var xTick = (float)((time / step - virtualStartIndex) * linewidth);
+                        canvas.DrawLine(xTick, (float)height - 10, xTick, (float)height, paint);
+                    }
 
                     var x = (float)((time / step - virtualStartIndex) * linewidth);
 
-                    foreach (var noteD in notes)
+                    foreach (var note in notes)
                     {
                         var seprate = (height - 30f) / 8f;
-                        var y = (float)(noteD.StartPosition * seprate + 10f);
+                        var y = (float)(note.StartPos * seprate + 10f);
 
-                        if (noteD.IsHanabi)
+                        if (note.IsHanabi)
                         {
                             var xDeltaHanabi = (float)(1f / step) * linewidth; // Hanabi is 1s due to frame analyze
                             var rectangleF = new SKRect(x, 0, x + xDeltaHanabi, (float)height);
 
-                            if (noteD.Type == SimaiNoteType.TouchHold)
-                                rectangleF.Left += (float)(noteD.HoldTime / step) * linewidth;
+                            if (note.Type == SimaiNoteType.TOUCHHOLD)
+                                rectangleF.Left += (float)(note.Duration / step) * linewidth;
 
                             canvas.Save();
                             canvas.Translate(rectangleF.Left, rectangleF.Top);
@@ -569,15 +553,15 @@ class SimaiVisualizerControl : Control
                             canvas.Restore();
                         }
 
-                        switch (noteD.Type)
+                        switch (note.Type)
                         {
-                            case SimaiNoteType.Tap:
-                                paint.Color = noteD.IsMine ? (noteD.IsBreak ? MineBreakColor : MineColor) :
-                                              noteD.IsBreak ? BreakColor :
-                                              isEach ? EachColor :
+                            case SimaiNoteType.TAP:
+                                paint.Color = note.IsMine ? (note.IsBreak ? MineBreakColor : MineColor) :
+                                              note.IsBreak ? BreakColor :
+                                              note.IsEach ? EachColor :
                                               TapColor;
 
-                                if (noteD.IsForceStar)
+                                if (note.IsStar)
                                 {
                                     paint.StrokeWidth = 3;
                                     canvas.DrawText("*", x - 7f, y - 7f, cache.TextFont, paint);
@@ -589,33 +573,33 @@ class SimaiVisualizerControl : Control
                                 }
                                 break;
 
-                            case SimaiNoteType.Touch:
+                            case SimaiNoteType.TOUCH:
                                 paint.StrokeWidth = 2;
-                                paint.Color = noteD.IsMine ? (noteD.IsBreak ? MineBreakColor : MineColor) :
-                                              isEach ? EachColor : TouchColor;
+                                paint.Color = note.IsMine ? (note.IsBreak ? MineBreakColor : MineColor) :
+                                              note.IsEach ? EachColor : TouchColor;
                                 canvas.DrawRect(x - 2.5f, y - 2.5f, 7, 7, paint);
                                 break;
 
-                            case SimaiNoteType.Hold:
+                            case SimaiNoteType.HOLD:
                                 paint.StrokeWidth = 3.5f;
-                                paint.Color = noteD.IsMine ? (noteD.IsBreak ? MineBreakColor : MineColor) :
-                                              noteD.IsBreak ? BreakColor :
-                                              isEach ? EachColor :
+                                paint.Color = note.IsMine ? (note.IsBreak ? MineBreakColor : MineColor) :
+                                              note.IsBreak ? BreakColor :
+                                              note.IsEach ? EachColor :
                                               TapColor;
 
-                                var xRight = (float)(x + (noteD.HoldTime / step) * linewidth);
+                                var xRight = (float)(x + (note.Duration / step) * linewidth);
                                 if (!float.IsNormal(xRight)) xRight = ushort.MaxValue;
                                 if (xRight - x < 1f) xRight = x + 5;
                                 canvas.DrawLine(x, y, xRight, y, paint);
                                 break;
 
-                            case SimaiNoteType.TouchHold:
+                            case SimaiNoteType.TOUCHHOLD:
                                 paint.StrokeWidth = 3.5f;
-                                var xDelta = (float)(noteD.HoldTime / step) * linewidth / 4f;
+                                var xDelta = (float)(note.Duration / step) * linewidth / 4f;
                                 if (!float.IsNormal(xDelta)) xDelta = ushort.MaxValue;
                                 if (xDelta < 1f) xDelta = 1;
 
-                                var touchHoldColors = noteD.IsMine ? TouchHoldMineColors : TouchHoldNormalColors;
+                                var touchHoldColors = note.IsMine ? TouchHoldMineColors : TouchHoldNormalColors;
                                 for (var j = 0; j < 4; j++)
                                 {
                                     paint.Color = touchHoldColors[j];
@@ -623,39 +607,15 @@ class SimaiVisualizerControl : Control
                                 }
                                 break;
 
-                            case SimaiNoteType.Slide:
-                                if (!noteD.IsSlideNoHead)
-                                {
-                                    paint.Color = noteD.IsMine ? (noteD.IsBreak ? MineBreakColor : MineColor) :
-                                                  noteD.IsBreak ? BreakColor :
-                                                  isEach ? EachColor :
-                                                  SlideHeadColor;
-
-                                    if (noteD.IsTapHeadSlide)
-                                    {
-                                        paint.StrokeWidth = 2;
-                                        canvas.DrawOval(x, y, 3.5f, 3.5f, paint);
-                                    }
-                                    else
-                                    {
-                                        paint.StrokeWidth = 1.5f;
-                                        var rad = 5f;
-                                        var rad2 = rad * 1.414f / 2f;
-                                        canvas.DrawLine(x - rad2, y - rad2, x + rad2, y + rad2, paint);
-                                        canvas.DrawLine(x + rad2, y - rad2, x - rad2, y + rad2, paint);
-                                        canvas.DrawLine(x, y - rad, x, y + rad, paint);
-                                        canvas.DrawLine(x - rad, y, x + rad, y, paint);
-                                    }
-                                }
-
+                            case SimaiNoteType.SLIDE:
                                 paint.StrokeWidth = 3.5f;
-                                paint.Color = noteD.IsMineSlide ? MineSlideColor :
-                                              noteD.IsSlideBreak ? BreakColor :
-                                              slideCount >= 2 ? EachColor :
+                                paint.Color = note.IsMine ? MineSlideColor :
+                                              note.IsBreak ? BreakColor :
+                                              note.IsEach ? EachColor :
                                               SlideBodyColor;
                                 paint.PathEffect = DashEffect;
-                                var xSlide = (float)((noteD.SlideStartTime + _offset) / step - virtualStartIndex) * linewidth;
-                                var xSlideRight = (float)(noteD.SlideTime / step) * linewidth + xSlide;
+                                var xSlide = (float)((timing.Time + note.SlideShootDelay + _offset) / step - virtualStartIndex) * linewidth;
+                                var xSlideRight = (float)(note.Duration / step) * linewidth + xSlide;
 
                                 if (!float.IsNormal(xSlideRight)) xSlideRight = ushort.MaxValue;
                                 if (!float.IsNormal(xSlide)) xSlide = ushort.MaxValue;
@@ -689,7 +649,7 @@ class SimaiVisualizerControl : Control
         if (TrackIf == null) return;
 
         context.Custom(new CustomDrawOp(new Rect(0, 0, Bounds.Width, Bounds.Height),
-            TrackIf, Time, ZoomLevel, SimaiChart ?? EmptyChart, Signatures ?? [], Offset, CaretTime,
+            TrackIf, Time, ZoomLevel, SimaiChart, Signatures ?? [], Offset, CaretTime,
             IsAnimated, _animationState, _renderCache, RequestNextAnimationFrame));
     }
 }

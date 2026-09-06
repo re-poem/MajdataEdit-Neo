@@ -57,8 +57,7 @@
 		<PackageReference Include="AvaloniaEdit.TextMate" Version="12.0.0" />
 		<PackageReference Include="CommunityToolkit.Mvvm" Version="8.4.2" />
 		<PackageReference Include="DiscordRichPresence" Version="1.6.1.70" />
-		<!--fork build 2.2.0 (local feed nuget-local/): includes IsTapHeadSlide+MemoryPackable-->
-		<PackageReference Include="Lingfeng-bbben.MajSimai" Version="2.2.2" />
+		<PackageReference Include="Cimai" Version="0.0.19" />
 		<PackageReference Include="ManagedBass" Version="4.0.2" />
 		<PackageReference Include="MemoryPack" Version="1.21.4" />
 		<PackageReference Include="MessageBox.Avalonia" Version="12.0.0" />

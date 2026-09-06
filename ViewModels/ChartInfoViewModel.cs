@@ -7,7 +7,6 @@ using MajdataEdit_Neo.Models;
 using MajdataEdit_Neo.Types;
 using MajdataEdit_Neo.Utils;
 using MajdataEdit_Neo.Views;
-using MajSimai;
 using System;
 using System.Collections.ObjectModel;
 using System.Diagnostics;
