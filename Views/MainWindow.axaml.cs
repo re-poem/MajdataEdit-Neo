@@ -303,13 +303,27 @@ public partial class MainWindow : Window
 
     private void MainWindow_KeyDown(object? sender, KeyEventArgs e)
     {
+        _pressedKeys.Add(e.Key);
+
         if (e.Key == Key.Escape && viewModel.CancelCurrentFFmpeg())
         {
             e.Handled = true;
             return;
         }
 
-        _pressedKeys.Add(e.Key);
+        if (!e.KeyModifiers.HasFlag(KeyModifiers.Control)) return;
+
+        var fontSizeDelta = e.Key switch
+        {
+            Key.OemPlus or Key.Add => 1,
+            Key.OemMinus or Key.Subtract => -1,
+            _ => 0
+        };
+
+        if (fontSizeDelta == 0) return;
+
+        viewModel.ChangeFontSizeCommand.Execute(fontSizeDelta);
+        e.Handled = true;
     }
 
     private void Caret_PositionChanged(object? sender, EventArgs e)

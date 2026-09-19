@@ -3,6 +3,7 @@ using Avalonia.Controls;
 using Avalonia.Media.Imaging;
 using Avalonia.Platform;
 using CommunityToolkit.Mvvm.ComponentModel;
+using CommunityToolkit.Mvvm.Input;
 using MajdataEdit_Neo.Types.MajSetting;
 using Newtonsoft.Json;
 using System;
@@ -58,6 +59,7 @@ public partial class MainWindowViewModel
     public void ReloadSettings(bool update = false)
     {
         I18N.Ins.Culture = new CultureInfo(Settings.EditSetting.Language);
+        Settings.EditSetting.FontSize = Math.Clamp(Settings.EditSetting.FontSize, 1f, 100f);
         FontSize = Settings.EditSetting.FontSize;
         IsAnimated = Settings.EditSetting.WaveAnimated;
         var bgPath = GetPath(Settings.EditSetting.BackgroundImagePath);
@@ -82,6 +84,17 @@ public partial class MainWindowViewModel
             _ = _playerConnection.UpdateAsync(file, SelectedDifficulty, chartText,
                 file.Levels[SelectedDifficulty] ?? "", file.Designers[SelectedDifficulty] ?? "");
         }
+    }
+
+    [RelayCommand]
+    public void ChangeFontSize(int delta)
+    {
+        var fontSize = Math.Clamp(Settings.EditSetting.FontSize + delta, 1f, 100f);
+        if (fontSize == Settings.EditSetting.FontSize) return;
+
+        Settings.EditSetting.FontSize = fontSize;
+        FontSize = fontSize;
+        SaveSettings();
     }
 
     public void SetWindowLastState(Window window)

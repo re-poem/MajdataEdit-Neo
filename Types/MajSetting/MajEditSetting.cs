@@ -18,7 +18,7 @@ public class MajEditSetting
     public string Language { get; set; } = "en-US";
 
     [Display(Name = nameof(Langs.Set_FontSize))]
-    [SettingControl(SettingControlType.Numeric, Max = 100, Min = 0, Step = 0.1)]
+    [SettingControl(SettingControlType.Numeric, Max = 100, Min = 1, Step = 1)]
     public float FontSize { get; set; } = 14f;
 
     [Display(Name = nameof(Langs.Set_AutoCheckUpdatesOnStartup))]
