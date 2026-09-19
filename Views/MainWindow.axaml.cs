@@ -339,7 +339,7 @@ public partial class MainWindow : Window
         var point = e.GetCurrentPoint(sender as SimaiVisualizerControl);
         var x = point.Position.X;
         viewModel.IsPointerPressedSimaiVisual = point.Properties.IsLeftButtonPressed;
-        if (lastX is null) lastX = x;
+        lastX ??= x;
         var delta = x - lastX;
         if (point.Properties.IsLeftButtonPressed)
         {
@@ -652,6 +652,14 @@ public partial class MainWindow : Window
             await Task.Delay(100); // focus will cost time, or the searchpanel buttons wont work.
             textEditor.SearchPanel.Open();
         }
+    }
+
+
+    private void SeekToDocPos(int offset, TextEditor editor)
+    {
+        editor.Select(offset, 0);
+        editor.TextArea.Caret.BringCaretToView();
+        editor.Focus();
     }
     private void SeekToDocPos(Point position, TextEditor editor)
     {

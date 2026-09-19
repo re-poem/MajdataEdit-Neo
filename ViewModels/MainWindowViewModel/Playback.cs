@@ -156,9 +156,10 @@ public partial class MainWindowViewModel
         TrackZoomLevel = level;
     }
 
-    public Point SlideTrackTime(double delta, TrackInfo? songTrackInfo, ReadOnlySpan<SimaiTiming> timings, float offset)
+    /// <returns>原始字节偏移数</returns>
+    public int SlideTrackTime(double delta, TrackInfo? songTrackInfo, ReadOnlySpan<SimaiTiming> timings, float offset)
     {
-        if (songTrackInfo is null) return new Point();
+        if (songTrackInfo is null) return 0;
         var time = TrackTime - delta * 0.2 * TrackZoomLevel;
         if (time < 0) time = 0;
         else if (time > songTrackInfo.Length) time = songTrackInfo.Length;
@@ -169,7 +170,7 @@ public partial class MainWindowViewModel
         TrackTime = time;
         mmvAudioTime.Write(0, (float)time);
 
-        if (timings.Length == 0) return new Point();
+        if (timings.Length == 0) return 0;
         var chartTime = time - offset;
         var index = FindTimingIndexAtOrBefore(timings, chartTime);
         if (index + 1 < timings.Length &&
@@ -182,9 +183,7 @@ public partial class MainWindowViewModel
         if (index < 0) index = 0;
         var nearestNote = timings[index];
 
-        // Cimai 不保留 RawTextPositionX/Y —— 编辑器需要这个坐标做光标定位，
-        // FumenPos 是 Utf-8 字节偏移，编辑器负责把字节偏移映射到 (line, col)。
-        return new Point((int)nearestNote.FumenPos, 0);
+        return (int)nearestNote.FumenPos;
     }
 
     [RelayCommand]
