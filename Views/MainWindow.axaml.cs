@@ -148,36 +148,26 @@ public partial class MainWindow : Window
 
     private void ConfigureKeyBindings()
     {
-        const KeyModifiers ctrl = KeyModifiers.Control;
-        const KeyModifiers ctrlShift = KeyModifiers.Control | KeyModifiers.Shift;
-
-        // Keep the complete shortcut layout here so changes do not get scattered
-        // between XAML, controls, and plugin-generated menu items.
-        var bindings = new (KeyGesture Gesture, Action Execute)[]
+        foreach (var shortcut in ShortcutDefinitions.All)
         {
-            (new(Key.S, ctrl), () => viewModel.SaveFileCommand.Execute(null)),
-            (new(Key.Z, ctrl), () => textEditor.Document.UndoStack.Undo()),
-            (new(Key.Y, ctrl), () => textEditor.Document.UndoStack.Redo()),
+            Action execute = shortcut.PluginIconKey is { } iconKey
+                ? new Action(() => ExecutePluginAction(iconKey))
+                : shortcut.FunctionKey switch
+                {
+                    "Gui_Save" => new Action(() => viewModel.SaveFileCommand.Execute(null)),
+                    "Shortcut_Undo" => new Action(() => textEditor.Document.UndoStack.Undo()),
+                    "Shortcut_Redo" => new Action(() => textEditor.Document.UndoStack.Redo()),
+                    "Shortcut_PlayStop" => new Action(() => viewModel.PlayStopCommand.Execute(null)),
+                    "Shortcut_PlayPause" => new Action(() => viewModel.PlayPauseCommand.Execute(null)),
+                    "Shortcut_PlayIncludeOp" => new Action(() => viewModel.PlayIncludeOpCommand.Execute(null)),
+                    "Shortcut_IncreasePlaybackSpeed" => new Action(() => viewModel.IncreasePlaybackSpeedCommand.Execute(null)),
+                    "Shortcut_DecreasePlaybackSpeed" => new Action(() => viewModel.DecreasePlaybackSpeedCommand.Execute(null)),
+                    _ => throw new InvalidOperationException($"Unknown shortcut: {shortcut.FunctionKey}")
+                };
 
-            (new(Key.C, ctrlShift), () => viewModel.PlayStopCommand.Execute(null)),
-            (new(Key.X, ctrlShift), () => viewModel.PlayPauseCommand.Execute(null)),
-            (new(Key.Z, ctrlShift), () => viewModel.PlayIncludeOpCommand.Execute(null)),
-
-            (new(Key.P, ctrl), () => viewModel.IncreasePlaybackSpeedCommand.Execute(null)),
-            (new(Key.O, ctrl), () => viewModel.DecreasePlaybackSpeedCommand.Execute(null)),
-
-            (new(Key.J, ctrl), () => ExecutePluginAction("mirror_h")),
-            (new(Key.K, ctrl), () => ExecutePluginAction("mirror_v")),
-            (new(Key.L, ctrl), () => ExecutePluginAction("mirror_180")),
-            (new(Key.OemSemicolon, ctrl), () => ExecutePluginAction("rotate_r")),
-            (new(Key.OemQuotes, ctrl), () => ExecutePluginAction("rotate_l"))
-        };
-
-        foreach (var (gesture, execute) in bindings)
-        {
             KeyBindings.Add(new KeyBinding
             {
-                Gesture = gesture,
+                Gesture = shortcut.Gesture,
                 Command = new RelayCommand(execute)
             });
         }

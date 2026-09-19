@@ -1,0 +1,52 @@
+<Window xmlns="https://github.com/avaloniaui"
+        xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+        xmlns:vm="using:MajdataEdit_Neo.ViewModels"
+        xmlns:types="using:MajdataEdit_Neo.Types"
+        xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
+        xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
+        xmlns:local="using:MajdataEdit_Neo"
+        mc:Ignorable="d"
+        Width="380"
+        Height="520"
+        CanResize="False"
+        WindowStartupLocation="CenterOwner"
+        x:Class="MajdataEdit_Neo.Views.ShortcutWindow"
+        x:DataType="vm:ShortcutWindowViewModel"
+        TransparencyLevelHint="AcrylicBlur"
+        Background="Transparent"
+        Title="{local:I18N Win_Shortcuts}">
+  <Design.DataContext>
+    <vm:ShortcutWindowViewModel/>
+  </Design.DataContext>
+  <Panel>
+    <ExperimentalAcrylicBorder IsHitTestVisible="False">
+      <ExperimentalAcrylicBorder.Material>
+        <ExperimentalAcrylicMaterial
+            BackgroundSource="Digger"
+            TintColor="Black"
+            TintOpacity="1"
+            MaterialOpacity="0.75" />
+      </ExperimentalAcrylicBorder.Material>
+    </ExperimentalAcrylicBorder>
+
+    <Grid Margin="20" RowDefinitions="Auto,*">
+      <Grid Grid.Row="0" ColumnDefinitions="*,Auto" ColumnSpacing="20" Margin="0,0,0,10">
+        <TextBlock Text="{local:I18N Gui_Function}" FontSize="16" FontWeight="Bold" />
+        <TextBlock Grid.Column="1" Text="{local:I18N Gui_ShortcutKey}" FontSize="16" FontWeight="Bold" />
+      </Grid>
+
+      <ScrollViewer Grid.Row="1" VerticalScrollBarVisibility="Auto" HorizontalScrollBarVisibility="Disabled">
+        <ItemsControl ItemsSource="{Binding Shortcuts}">
+          <ItemsControl.ItemTemplate>
+            <DataTemplate x:DataType="types:ShortcutDefinition">
+              <Grid ColumnDefinitions="*,Auto" ColumnSpacing="20" Margin="0,7">
+                <TextBlock Text="{local:I18N {Binding FunctionKey}}" TextWrapping="Wrap" />
+                <TextBlock Grid.Column="1" Text="{Binding GestureText}" />
+              </Grid>
+            </DataTemplate>
+          </ItemsControl.ItemTemplate>
+        </ItemsControl>
+      </ScrollViewer>
+    </Grid>
+  </Panel>
+</Window>

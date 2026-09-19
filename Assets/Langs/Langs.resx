@@ -157,13 +157,13 @@
     <value>Mirror Vertically</value>
   </data>
   <data name="Gui_Mirror180" xml:space="preserve">
-    <value>Mirror 180°</value>
+    <value>Center Symmetric Mirror</value>
   </data>
   <data name="Gui_Rotate45" xml:space="preserve">
-    <value>Rotate 45°</value>
+    <value>Rotate 45° CW</value>
   </data>
   <data name="Gui_RotateNeg45" xml:space="preserve">
-    <value>Rotate -45°</value>
+    <value>Rotate 45° CCW</value>
   </data>
   <data name="Gui_Subdivide1p5x" xml:space="preserve">
     <value>Subdivide 1.5 Times</value>
@@ -470,5 +470,38 @@ Do you want to download the latest update of Majdata?</value>
   </data>
   <data name="Set_ExportQuality" xml:space="preserve">
     <value>Export Quality</value>
+  </data>
+  <data name="Gui_ShortcutOverview" xml:space="preserve">
+    <value>Keyboard Shortcuts</value>
+  </data>
+  <data name="Win_Shortcuts" xml:space="preserve">
+    <value>Keyboard Shortcuts</value>
+  </data>
+  <data name="Gui_Function" xml:space="preserve">
+    <value>Function</value>
+  </data>
+  <data name="Gui_ShortcutKey" xml:space="preserve">
+    <value>Shortcut</value>
+  </data>
+  <data name="Shortcut_Undo" xml:space="preserve">
+    <value>Undo</value>
+  </data>
+  <data name="Shortcut_Redo" xml:space="preserve">
+    <value>Redo</value>
+  </data>
+  <data name="Shortcut_PlayStop" xml:space="preserve">
+    <value>Play / Stop</value>
+  </data>
+  <data name="Shortcut_PlayPause" xml:space="preserve">
+    <value>Play / Pause</value>
+  </data>
+  <data name="Shortcut_PlayIncludeOp" xml:space="preserve">
+    <value>Start Recording Mode</value>
+  </data>
+  <data name="Shortcut_IncreasePlaybackSpeed" xml:space="preserve">
+    <value>Increase Playback Speed</value>
+  </data>
+  <data name="Shortcut_DecreasePlaybackSpeed" xml:space="preserve">
+    <value>Decrease Playback Speed</value>
   </data>
 </root>

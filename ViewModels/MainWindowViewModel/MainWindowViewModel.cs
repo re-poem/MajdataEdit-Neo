@@ -25,6 +25,7 @@ namespace MajdataEdit_Neo.ViewModels;
 public partial class MainWindowViewModel : ViewModelBase
 {
     public static MainWindowViewModel Ins { get; private set; } = null!;
+    private ShortcutWindow? _shortcutWindow;
 
     //------status bar (window-level)
 
@@ -88,6 +89,9 @@ public partial class MainWindowViewModel : ViewModelBase
 
     public async Task OnWindowClosingAsync()
     {
+        _shortcutWindow?.Close();
+        _shortcutWindow = null;
+
         try
         {
             SaveEditRecord();
@@ -135,6 +139,31 @@ public partial class MainWindowViewModel : ViewModelBase
                 Process.Start("open", url);
             }
         }
+    }
+
+    [RelayCommand]
+    public void OpenShortcutWindow()
+    {
+        var desktop = Application.Current?.ApplicationLifetime as IClassicDesktopStyleApplicationLifetime;
+        if (desktop?.MainWindow is null) return;
+
+        if (_shortcutWindow is not null)
+        {
+            _shortcutWindow.Activate();
+            return;
+        }
+
+        var window = new ShortcutWindow
+        {
+            DataContext = new ShortcutWindowViewModel()
+        };
+        _shortcutWindow = window;
+        window.Closed += (_, _) =>
+        {
+            if (ReferenceEquals(_shortcutWindow, window))
+                _shortcutWindow = null;
+        };
+        window.Show(desktop.MainWindow);
     }
 
     public async void OpenSettingsWindow()

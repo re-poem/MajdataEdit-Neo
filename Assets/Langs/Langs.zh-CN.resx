@@ -151,19 +151,19 @@
     <value>编辑</value>
   </data>
   <data name="Gui_MirrorHorizontally" xml:space="preserve">
-    <value>左右翻转选择</value>
+    <value>左右镜像</value>
   </data>
   <data name="Gui_MirrorVertically" xml:space="preserve">
-    <value>上下翻转选择</value>
+    <value>上下镜像</value>
   </data>
   <data name="Gui_Mirror180" xml:space="preserve">
-    <value>180°翻转选择</value>
+    <value>中心对称镜像</value>
   </data>
   <data name="Gui_Rotate45" xml:space="preserve">
-    <value>45°顺时针旋转选择</value>
+    <value>顺时针旋转45度</value>
   </data>
   <data name="Gui_RotateNeg45" xml:space="preserve">
-    <value>45°逆时针旋转选择</value>
+    <value>逆时针旋转45度</value>
   </data>
   <data name="Gui_Subdivide1p5x" xml:space="preserve">
     <value>将乐句1.5倍细分</value>
@@ -470,5 +470,38 @@
   </data>
   <data name="Set_ExportQuality" xml:space="preserve">
     <value>导出质量</value>
+  </data>
+  <data name="Gui_ShortcutOverview" xml:space="preserve">
+    <value>快捷键一览</value>
+  </data>
+  <data name="Win_Shortcuts" xml:space="preserve">
+    <value>快捷键一览</value>
+  </data>
+  <data name="Gui_Function" xml:space="preserve">
+    <value>功能</value>
+  </data>
+  <data name="Gui_ShortcutKey" xml:space="preserve">
+    <value>快捷键</value>
+  </data>
+  <data name="Shortcut_Undo" xml:space="preserve">
+    <value>撤销</value>
+  </data>
+  <data name="Shortcut_Redo" xml:space="preserve">
+    <value>重做</value>
+  </data>
+  <data name="Shortcut_PlayStop" xml:space="preserve">
+    <value>播放 / 停止</value>
+  </data>
+  <data name="Shortcut_PlayPause" xml:space="preserve">
+    <value>播放 / 暂停</value>
+  </data>
+  <data name="Shortcut_PlayIncludeOp" xml:space="preserve">
+    <value>开始录制模式</value>
+  </data>
+  <data name="Shortcut_IncreasePlaybackSpeed" xml:space="preserve">
+    <value>加速播放</value>
+  </data>
+  <data name="Shortcut_DecreasePlaybackSpeed" xml:space="preserve">
+    <value>减速播放</value>
   </data>
 </root>

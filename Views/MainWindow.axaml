@@ -88,6 +88,8 @@
 					<MenuItem Name="NewChartFromVideoMenuItem" Header="{local:I18N Gui_NewChartFromVideo}" Command="{Binding NewChartFromVideoCommand}"/>
 				</MenuItem>
 				<MenuItem Header="{local:I18N Gui_About}">
+					<MenuItem Header="{local:I18N Gui_ShortcutOverview}" Command="{Binding OpenShortcutWindowCommand}"/>
+					<Separator/>
 					<MenuItem Header="Discord" Command="{Binding AboutButtonClickedCommand}" CommandParameter="0"/>
 					<MenuItem Header="QQ" Command="{Binding AboutButtonClickedCommand}" CommandParameter="1"/>
 					<Separator/>
