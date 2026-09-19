@@ -100,6 +100,8 @@ public partial class MainWindow : Window
         textEditor.TextChanged += TextEditor_TextChanged;
         textEditor.TextArea.TextEntered += TextEditor_TextArea_TextEntered;
         textEditor.TextArea.Caret.PositionChanged += Caret_PositionChanged;
+        textEditor.TextArea.LostFocus += (_, _) =>
+            Dispatcher.UIThread.Post(() => textEditor.TextArea.Caret.Show());
         textEditor.TextArea.AddHandler(InputElement.KeyDownEvent, TextEditor_PreviewKeyDown, RoutingStrategies.Tunnel);
         textEditor.TextArea.AddHandler(InputElement.PointerPressedEvent, TextEditor_PreviewPointerPressed, RoutingStrategies.Tunnel);
         textEditor.Options.HighlightCurrentLine = true;
