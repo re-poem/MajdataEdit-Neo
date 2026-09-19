@@ -262,4 +262,9 @@ public static partial class ReadOnlySpanExtensions
 
         return bestItem;
     }
+
+    extension(ReadOnlySpan<byte> span)
+    {
+        public string Utf8String() => Encoding.UTF8.GetString(span);
+    }
 }

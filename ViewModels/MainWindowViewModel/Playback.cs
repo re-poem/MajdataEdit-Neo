@@ -10,7 +10,7 @@ using MajdataEdit_Neo.Types;
 using MajdataEdit_Neo.Types.MajSetting;
 using MajdataEdit_Neo.Types.MajWs;
 using MajdataEdit_Neo.Utils;
-using MajSimai;
+using Cimai;
 using MsBox.Avalonia.Enums;
 using System;
 using System.Diagnostics;
@@ -68,10 +68,6 @@ public partial class MainWindowViewModel
     private readonly Lock _playbackTrackingLock = new();
     private CancellationTokenSource? _playbackTrackingCts;
     private Task _playbackTrackingTask = Task.CompletedTask;
-    private SimaiChart? _followChart;
-    private int _followTimingIndex = -1;
-    private int _lastReportedFollowTimingIndex = -1;
-    private double _lastFollowChartTime = double.NegativeInfinity;
     private bool _disposed;
 
     public event Action<Point>? RequestSeekToDocPos;
@@ -88,7 +84,6 @@ public partial class MainWindowViewModel
         _playerConnection.OnViewError += OnViewError;
         _playerConnection.OnViewStateChanged += OnViewStateChanged;
 
-        Directory.CreateDirectory(MajEnv.MajdataViewPersistentDataPath);
         var mmfAudioTimeFileStream = new FileStream(
             MajEnv.MmfAudioTimePath,
             FileMode.OpenOrCreate,
@@ -161,7 +156,7 @@ public partial class MainWindowViewModel
         TrackZoomLevel = level;
     }
 
-    public Point SlideTrackTime(double delta, TrackInfo? songTrackInfo, SimaiChart? chartData, float offset)
+    public Point SlideTrackTime(double delta, TrackInfo? songTrackInfo, ReadOnlySpan<SimaiTiming> timings, float offset)
     {
         if (songTrackInfo is null) return new Point();
         var time = TrackTime - delta * 0.2 * TrackZoomLevel;
@@ -174,22 +169,22 @@ public partial class MainWindowViewModel
         TrackTime = time;
         mmvAudioTime.Write(0, (float)time);
 
-        if (chartData is null) return new Point();
-        var timings = chartData.CommaTimings;
         if (timings.Length == 0) return new Point();
         var chartTime = time - offset;
         var index = FindTimingIndexAtOrBefore(timings, chartTime);
         if (index + 1 < timings.Length &&
             (index < 0 ||
-             Math.Abs(timings[index + 1].Timing - chartTime) <
-             Math.Abs(timings[index].Timing - chartTime)))
+             Math.Abs(timings[index + 1].Time - chartTime) <
+             Math.Abs(timings[index].Time - chartTime)))
         {
             index++;
         }
         if (index < 0) index = 0;
         var nearestNote = timings[index];
 
-        return new Point(nearestNote.RawTextPositionX, nearestNote.RawTextPositionY - 1);
+        // Cimai 不保留 RawTextPositionX/Y —— 编辑器需要这个坐标做光标定位，
+        // FumenPos 是 Utf-8 字节偏移，编辑器负责把字节偏移映射到 (line, col)。
+        return new Point((int)nearestNote.FumenPos, 0);
     }
 
     [RelayCommand]
@@ -210,27 +205,28 @@ public partial class MainWindowViewModel
     {
         CaretLine = line;
 
-        var chartData = CurrentChartData;
+        var timings = CurrentMaidata.IsEmpty ? default : CurrentMaidata.GetChart(SelectedDifficulty).Timings;
+        if (timings.Length == 0) { CaretTime = 0; return; }
 
-        var commaTs = chartData.CommaTimings;
-        var nearestTiming = commaTs.Length > 0 ? commaTs[0] : default;
-        foreach (var commaT in commaTs)
+        // 找第一个 FumenPos >= rawPosition 的 timing 作为 caret 时刻
+        var caretTime = 0d;
+        foreach (var t in timings)
         {
-            if (commaT.RawTextPosition >= rawPosition)
+            if ((long)t.FumenPos >= rawPosition)
             {
-                nearestTiming = commaT;
+                caretTime = t.Time;
                 break;
             }
         }
-        CaretTime = nearestTiming?.Timing ?? 0;
+        CaretTime = caretTime;
 
-        var noteTs = chartData.NoteTimings;
+        // combo 数到 caret 之前的所有 notes
         var currentCombo = 0;
-        foreach (var noteT in noteTs)
+        foreach (var noteT in timings)
         {
-            if (noteT.RawTextPosition >= rawPosition) break;
+            if ((long)noteT.FumenPos >= rawPosition) break;
             foreach (var note in noteT.Notes)
-                if (note.Type is SimaiNoteType.Slide && !note.IsSlideNoHead) currentCombo += 2;
+                if (note.Type == SimaiNoteType.SLIDE) currentCombo += 2;
                 else currentCombo++;
         }
         CurrentCombo = currentCombo;
@@ -272,7 +268,7 @@ public partial class MainWindowViewModel
 
     public async Task PushUpdateAsync(bool force = false)
     {
-        var simai = CurrentSimaiFile;
+        var simai = CurrentMaidata;
         if (simai is null || !_playerConnection.IsConnected)
             return;
 
@@ -283,7 +279,9 @@ public partial class MainWindowViewModel
         }
 
         _updateDirty = false;
-        await _playerConnection.UpdateAsync(simai, CurrentChartData, SelectedDifficulty);
+        var chartText = simai.Fumens[SelectedDifficulty] ?? string.Empty;
+        await _playerConnection.UpdateAsync(simai, SelectedDifficulty, chartText,
+            simai.Levels[SelectedDifficulty] ?? "", simai.Designers[SelectedDifficulty] ?? "");
     }
 
     //------commands
@@ -291,7 +289,7 @@ public partial class MainWindowViewModel
     [RelayCommand]
     public void PlayRecord()
     {
-        if (CurrentSimaiFile == null) return;
+        if (CurrentMaidata == null) return;
         _ = PlayRecord(Settings, MaidataDir);
     }
 
@@ -312,7 +310,7 @@ public partial class MainWindowViewModel
     [RelayCommand]
     public void PlayIncludeOp()
     {
-        if (CurrentSimaiFile == null) return;
+        if (CurrentMaidata == null) return;
         _ = PlayIncludeOp(Settings);
     }
 
@@ -332,7 +330,7 @@ public partial class MainWindowViewModel
     [RelayCommand]
     public void PlayStop()
     {
-        if (CurrentSimaiFile == null) return;
+        if (CurrentMaidata == null) return;
         _ = PlayStop(Settings);
     }
 
@@ -361,7 +359,7 @@ public partial class MainWindowViewModel
     [RelayCommand]
     public void PlayPause()
     {
-        if (CurrentSimaiFile == null) return;
+        if (CurrentMaidata == null) return;
         _ = PlayPause(Settings);
     }
 
@@ -447,7 +445,6 @@ public partial class MainWindowViewModel
                     return;
 
                 CurrentViewState = ViewStatus.Playing;
-                ResetFollowCursorIndex();
             });
 
             trackingTask = TrackPlaybackAsync(cancellationToken);
@@ -548,47 +545,12 @@ public partial class MainWindowViewModel
 
     private Point? GetFollowCursorPoint(double trackTime)
     {
-        var chart = CurrentChartData;
-        var timings = chart.CommaTimings;
+        var timings = CurrentMaidata.IsEmpty ? default : CurrentMaidata.GetChart(SelectedDifficulty).Timings;
         if (timings.Length == 0)
             return null;
 
-        var chartTime = trackTime - Offset;
-        if (!ReferenceEquals(chart, _followChart) ||
-            chartTime < _lastFollowChartTime ||
-            chartTime - _lastFollowChartTime > 0.5 ||
-            _followTimingIndex >= timings.Length)
-        {
-            if (!ReferenceEquals(chart, _followChart))
-                _lastReportedFollowTimingIndex = -1;
-            _followChart = chart;
-            _followTimingIndex = FindTimingIndexAtOrBefore(timings, chartTime);
-        }
-        else
-        {
-            while (_followTimingIndex + 1 < timings.Length &&
-                   timings[_followTimingIndex + 1].Timing <= chartTime)
-            {
-                _followTimingIndex++;
-            }
-        }
-
-        _lastFollowChartTime = chartTime;
-        if (_followTimingIndex < 0 ||
-            _followTimingIndex == _lastReportedFollowTimingIndex)
-            return null;
-
-        _lastReportedFollowTimingIndex = _followTimingIndex;
-        var timing = timings[_followTimingIndex];
-        return new Point(timing.RawTextPositionX, timing.RawTextPositionY - 1);
-    }
-
-    private void ResetFollowCursorIndex()
-    {
-        _followChart = null;
-        _followTimingIndex = -1;
-        _lastReportedFollowTimingIndex = -1;
-        _lastFollowChartTime = double.NegativeInfinity;
+        var timing = timings[FindTimingIndexAtOrBefore(timings, trackTime - Offset)];
+        return new Point((int)timing.FumenPos, 0);
     }
 
     private Task CancelPlaybackTracking()
@@ -603,7 +565,7 @@ public partial class MainWindowViewModel
         }
     }
 
-    private static int FindTimingIndexAtOrBefore(ReadOnlySpan<SimaiTimingPoint> timings, double chartTime)
+    private static int FindTimingIndexAtOrBefore(ReadOnlySpan<SimaiTiming> timings, double chartTime)
     {
         var low = 0;
         var high = timings.Length - 1;
@@ -611,7 +573,7 @@ public partial class MainWindowViewModel
         while (low <= high)
         {
             var middle = low + ((high - low) >> 1);
-            if (timings[middle].Timing <= chartTime)
+            if (timings[middle].Time <= chartTime)
             {
                 result = middle;
                 low = middle + 1;

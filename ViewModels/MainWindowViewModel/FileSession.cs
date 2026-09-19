@@ -5,11 +5,11 @@ using MajdataEdit_Neo.Assets.Langs;
 using MajdataEdit_Neo.Models;
 using MajdataEdit_Neo.Types;
 using MajdataEdit_Neo.Utils;
-using MajSimai;
 using MsBox.Avalonia.Enums;
 using System;
 using System.Diagnostics;
 using System.IO;
+using System.Text;
 using System.Threading.Tasks;
 using static MajdataEdit_Neo.Base.MajEnv;
 
@@ -38,13 +38,13 @@ public partial class MainWindowViewModel
         // Doc changes -> update WindowTitle, auto-save, stop playback
         PropertyChanged += (s, e) =>
         {
-            if (e.PropertyName == nameof(CurrentSimaiFile))
+            if (e.PropertyName == nameof(CurrentMaidata))
             {
                 NotifyWindowTitleChanged();
                 Stop(false);
                 UpdateFumenContextChanged();
                 IsFileChanged = !IsSaved;
-                _ = OnSimaiFileChangedAsync(CurrentSimaiFile);
+                _ = OnSimaiFileChangedAsync(CurrentMaidata);
             }
             else if (e.PropertyName == nameof(SelectedDifficulty))
             {
@@ -59,7 +59,7 @@ public partial class MainWindowViewModel
 
         FumenContentChanged += async (s, e) =>
         {
-            await OnSimaiFileChangedAsync(CurrentSimaiFile);
+            await OnSimaiFileChangedAsync(CurrentMaidata);
             // 文本变更（已防抖 + 解析完成）-> 推送 Update
             await PushUpdateAsync();
         };
@@ -104,13 +104,6 @@ public partial class MainWindowViewModel
         SaveEditRecord();
 
         File.Create(Path.Combine(directory, "maidata.txt")).Dispose();
-        var levels = new SimaiChart[7];
-        var metadata = new MutSimaiChartMetadata[7];
-        for (var i = 0; i < 7; i++)
-        {
-            levels[i] = new SimaiChart(string.Empty, string.Empty, string.Empty, []);
-            metadata[i] = new MutSimaiChartMetadata();
-        }
         var songTrackInfo = _trackReader.ReadTrack(directory);
 
         _editTimer.Reset();
@@ -118,8 +111,7 @@ public partial class MainWindowViewModel
 
         MaidataDir = directory;
         SongTrackInfo = songTrackInfo;
-        CurrentChartMetadata = metadata;
-        CurrentSimaiFile = new SimaiFile("Set Title", "Set Artist", 0, string.Empty, levels, null);
+        CurrentMaidata = MaidataFile.Parse("&title=Set Title\n&artist=Set Artist\n&first=0\n");
         SelectedDifficulty = 0;
         IsSaved = false;
         UpdateContext(MaidataDir);
@@ -193,29 +185,17 @@ public partial class MainWindowViewModel
     {
         SaveEditRecord();
 
-        await using var maidataStream = new FileStream(maidataPath, FileMode.Open, FileAccess.Read);
-        var simaiFile = await SimaiParser.ParseAsync(maidataStream);
-        var metadata = new MutSimaiChartMetadata[7];
-        for (var i = 0; i < 7; i++)
-        {
-            var chart = simaiFile.Charts[i];
-            metadata[i] = new MutSimaiChartMetadata
-            {
-                Level = chart.Level,
-                Designer = chart.Designer,
-                Fumen = chart.Fumen
-            };
-        }
+        var content = await File.ReadAllTextAsync(maidataPath);
+        var maidataFile = MaidataFile.Parse(content);
+
         var fileInfo = new FileInfo(maidataPath);
         var directory = fileInfo.Directory?.FullName;
         if (directory is null) return;
         var songTrackInfo = _trackReader.ReadTrack(directory);
-        var content = await File.ReadAllTextAsync(maidataPath);
 
         MaidataDir = directory;
         SongTrackInfo = songTrackInfo;
-        CurrentChartMetadata = metadata;
-        CurrentSimaiFile = simaiFile;
+        CurrentMaidata = maidataFile;
         UpdateContext(MaidataDir);
         SetContent(content);
         Enabled = true;
@@ -260,32 +240,22 @@ public partial class MainWindowViewModel
     [RelayCommand]
     public async Task SaveFile()
     {
-        if (CurrentSimaiFile is null) return;
+        if (CurrentMaidata.IsEmpty) return;
 
-        for (var i = 0; i < 7; i++)
-        {
-            var parsedChart = CurrentSimaiFile.Charts[i];
-            CurrentSimaiFile.Charts[i] = new SimaiChart(
-                CurrentChartMetadata[i].Level,
-                CurrentChartMetadata[i].Designer,
-                CurrentChartMetadata[i].Fumen,
-                parsedChart.NoteTimings,
-                parsedChart.CommaTimings);
-        }
+        var text = MaidataFile.Deparse(CurrentMaidata);
         var maidataPath = Path.Combine(MaidataDir, "maidata.txt");
         var tempPath = Path.Combine(MaidataDir, $".maidata.{Guid.NewGuid():N}.tmp");
         try
         {
-            await using (var stream = new FileStream(
+            await using var stream = new FileStream(
                 tempPath,
                 FileMode.CreateNew,
                 FileAccess.Write,
                 FileShare.None,
                 4096,
-                FileOptions.Asynchronous | FileOptions.WriteThrough))
-            {
-                await SimaiParser.DeparseAsync(CurrentSimaiFile, stream);
-            }
+                FileOptions.Asynchronous | FileOptions.WriteThrough);
+            await using var writer = new StreamWriter(stream, new UTF8Encoding(false));
+            await writer.WriteAsync(text);
 
             File.Move(tempPath, maidataPath, overwrite: true);
         }
@@ -329,5 +299,7 @@ public partial class MainWindowViewModel
         {
             Debug.WriteLine($"Failed to dispose Discord RPC: {ex}");
         }
+
+        CurrentMaidata = MaidataFile.Empty;
     }
 }

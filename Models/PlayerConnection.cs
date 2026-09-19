@@ -3,15 +3,13 @@ using MajdataEdit_Neo.Base;
 using MajdataEdit_Neo.Types.MajSetting;
 using MajdataEdit_Neo.Types.MajWs;
 using MajdataEdit_Neo.Utils;
-using MajSimai;
-using MemoryPack;
+using MajdataEdit_Neo.Types;
 using MsBox.Avalonia;
 using MsBox.Avalonia.Enums;
 using System;
 using System.Collections.Concurrent;
 using System.Diagnostics;
-using System.IO;
-using System.IO.MemoryMappedFiles;
+using System.Text;
 using System.Threading;
 using System.Threading.Tasks;
 using WebSocketSharp;
@@ -68,29 +66,9 @@ internal class PlayerConnection : IDisposable, IAsyncDisposable
     bool _disposed;
     WebSocket? _client;
     readonly ConcurrentQueue<MessageEventArgs> _playerMessages = new();
-    private readonly MemoryMappedFile mmfChartData = null!;
-    private readonly MemoryMappedViewAccessor mmvChartData = null!;
     public PlayerConnection()
     {
         _listenerTask = Task.Run(() => StartToListenWebSocket(_lifetimeCts.Token));
-
-        var mmfChartDataFileStream = new FileStream(
-            MajEnv.MmfChartDataPath,
-            FileMode.OpenOrCreate,
-            FileAccess.ReadWrite,
-            FileShare.ReadWrite
-        );
-        if (mmfChartDataFileStream.Length < MajEnv.MmfChartDataCapacity)
-            mmfChartDataFileStream.SetLength(MajEnv.MmfChartDataCapacity);
-        mmfChartData = MemoryMappedFile.CreateFromFile(
-            mmfChartDataFileStream,
-            null,
-            MajEnv.MmfChartDataCapacity,
-            MemoryMappedFileAccess.ReadWrite,
-            HandleInheritability.None,
-            false
-        );
-        mmvChartData = mmfChartData.CreateViewAccessor();
     }
 
     public async Task<bool> ConnectAsync(string? url = null)
@@ -197,44 +175,54 @@ internal class PlayerConnection : IDisposable, IAsyncDisposable
             //if busy, wait
             await WaitUntilNotBusyAsync();
         }
-        var req = new MajWsLoadRequest()
+        var req = new MajWsRequest
         {
+            Type = MajWsRequestType.Load,
             TrackPath = trackPath,
             ImagePath = coverPath,
-            VideoPath = mvPath
+            VideoPath = mvPath,
         };
         await SendAsync(req);
     }
     public async Task SettingAsync(MajViewSetting viewSetting, MajVolumeSetting volumeSetting)
     {
-        var req = new MajWsSettingRequest()
+        var req = new MajWsRequest
         {
+            Type = MajWsRequestType.Setting,
             ViewSetting = viewSetting,
-            VolumeSetting = volumeSetting
+            VolumeSetting = volumeSetting,
         };
         await SendAsync(req);
     }
 
     /// <summary>
-    /// 把已解析的谱面推给播放器：分两段写入共享内存——
-    /// 第一段 = SimaiFile 元数据（Charts 已 MemoryPackIgnore，仅元数据 + Commands），
-    /// 第二段 = SimaiChart（当前难度的 NoteTimings/CommaTimings）。
+    /// 把已解析的谱面推给播放器：
+    /// 谱面文本、元数据（Title / Artist / Level / Designer / Offset / ClockCount）
+    /// 全部直接走单条 WS 文本帧传输，不再经共享内存中转。
     /// </summary>
-    public async Task UpdateAsync(SimaiFile file, SimaiChart chart, int selectedDifficulty)
+    public async Task UpdateAsync(MaidataFile file, int selectedDifficulty, string chartText, string level, string designer)
     {
-        var fileBytes = MemoryPackSerializer.Serialize(file);
-        var chartBytes = MemoryPackSerializer.Serialize(chart);
-        if (fileBytes.Length + chartBytes.Length > MajEnv.MmfChartDataCapacity)
-            throw new InvalidOperationException(
-                $"chart data too large: {fileBytes.Length + chartBytes.Length} > {MajEnv.MmfChartDataCapacity}");
-
-        mmvChartData.WriteArray(0, fileBytes, 0, fileBytes.Length);
-        mmvChartData.WriteArray(fileBytes.Length, chartBytes, 0, chartBytes.Length);
-        var req = new MajWsUpdateRequest()
+        var clockCount = 0;
+        foreach (var cmd in file.Commands)
         {
-            FileLength = fileBytes.Length,
-            ChartLength = chartBytes.Length,
-            SelectedDifficulty = selectedDifficulty
+            if (cmd.Key == "clock_count")
+            {
+                int.TryParse(cmd.Value, out clockCount);
+                break;
+            }
+        }
+
+        var req = new MajWsRequest
+        {
+            Type = MajWsRequestType.Update,
+            ChartText = chartText ?? string.Empty,
+            SelectedDifficulty = selectedDifficulty,
+            Title = file.Title,
+            Artist = file.Artist,
+            Level = level ?? string.Empty,
+            Designer = designer ?? string.Empty,
+            Offset = file.Offset,
+            ClockCount = clockCount,
         };
         await SendAsync(req);
     }
@@ -254,23 +242,24 @@ internal class PlayerConnection : IDisposable, IAsyncDisposable
             await WaitUntilNotBusyAsync();
         }
 
-        var req = new MajWsPlayRequest()
+        var req = new MajWsRequest
         {
-            Mode = mode,
+            Type = MajWsRequestType.Play,
+            PlayMode = mode,
             StartAt = startAt,
             Speed = speed,
-            MaidataPath = maidataPath
+            MaidataPath = maidataPath,
         };
         await SendAsync(req);
     }
     public async Task PauseAsync()
     {
-        var req = new MajWsPauseRequest();
+        var req = new MajWsRequest { Type = MajWsRequestType.Pause };
         await SendAsync(req);
     }
     public async Task StopAsync()
     {
-        var req = new MajWsStopRequest();
+        var req = new MajWsRequest { Type = MajWsRequestType.Stop };
         await SendAsync(req);
     }
     async Task SendAsync(MajWsRequest req)
@@ -279,9 +268,10 @@ internal class PlayerConnection : IDisposable, IAsyncDisposable
         if (client is null || !client.IsAlive)
             throw new PlayerNotConnectedException();
 
-        var bytes = MemoryPackSerializer.Serialize<MajWsRequest>(req);
-        await Task.Run(() => client.Send(bytes));
-        Debug.WriteLine($"Player request sent: {req.GetType().Name}");
+        // 文本帧（JSON 字符串）；websocket-sharp 在传入 string 时发送文本帧。
+        var json = WsJson.Serialize(req);
+        await Task.Run(() => client.Send(json));
+        Debug.WriteLine($"Player request sent: {req.Type}");
     }
     private async Task WaitUntilNotBusyAsync()
     {
@@ -320,7 +310,9 @@ internal class PlayerConnection : IDisposable, IAsyncDisposable
 
     private async Task ProcessMessageAsync(MessageEventArgs args)
     {
-        var resp = MemoryPackSerializer.Deserialize<MajWsResponse>(args.RawData);
+        // 文本帧为 JSON；二进制帧按 UTF-8 解码为 JSON（兼容 ViewX 误发二进制的情况）
+        var json = args.IsBinary ? Encoding.UTF8.GetString(args.RawData) : args.Data;
+        var resp = WsJson.Deserialize<MajWsResponse>(json);
         if (resp is null)
             return;
         switch (resp.ResponseType)
@@ -328,19 +320,19 @@ internal class PlayerConnection : IDisposable, IAsyncDisposable
             case MajWsResponseType.PlayPaused:
             case MajWsResponseType.Heartbeat:
             case MajWsResponseType.Ok:
-                UpdateViewSummary(resp.Summary);
+                if (resp.Summary is not null) UpdateViewSummary(resp.Summary);
                 break;
             case MajWsResponseType.LoadOk:
-                UpdateViewSummary(resp.Summary);
+                if (resp.Summary is not null) UpdateViewSummary(resp.Summary);
                 OnLoadFinished?.Invoke(this, EventArgs.Empty);
                 break;
             case MajWsResponseType.PlayResumed:
             case MajWsResponseType.PlayStarted:
-                UpdateViewSummary(resp.Summary);
+                if (resp.Summary is not null) UpdateViewSummary(resp.Summary);
                 OnPlayStarted?.Invoke(this, resp.ResponseType);
                 break;
             case MajWsResponseType.PlayStopped:
-                UpdateViewSummary(resp.Summary);
+                if (resp.Summary is not null) UpdateViewSummary(resp.Summary);
                 OnPlayStopped?.Invoke(this, resp.ResponseType);
                 break;
             case MajWsResponseType.Error:
@@ -348,6 +340,7 @@ internal class PlayerConnection : IDisposable, IAsyncDisposable
                 OnViewError?.Invoke(this, resp.Error);
                 break;
         }
+        await Task.CompletedTask;
     }
 
     private void UpdateViewSummary(ViewSummary summary)

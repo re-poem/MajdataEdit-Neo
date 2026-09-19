@@ -121,12 +121,14 @@ public partial class MainWindowViewModel
         }
     }
 
+    private static readonly string[] videoNames = ["pv.mp4", "mv.mp4", "bg.mp4"];
     public async Task MediaQuickProcessAsync()
     {
         CancellationTokenSource? operation = null;
         try
         {
-            if (CurrentChartData is null || CurrentChartData.CommaTimings.Length == 0)
+            if (CurrentMaidata is not { } file ||
+                file.GetChart(SelectedDifficulty).Timings.Length == 0)
             {
                 await MessageBox.ShowWindowDialogAsync(
                     Langs.Msg_NoBpmInChart,
@@ -134,7 +136,7 @@ public partial class MainWindowViewModel
                     ButtonEnum.Ok, MsBox.Avalonia.Enums.Icon.Error);
                 return;
             }
-            var firstTiming = CurrentChartData.CommaTimings[0];
+            var firstTiming = file.GetChart(SelectedDifficulty).Timings[0];
             var bpm = firstTiming.Bpm; var offset = Offset;
             var beatsCount = MediaQuickProcessBeatsCount; var freezeFrame = MediaQuickProcessFreezeFrame;
             if (!await EnsureFFmpeg()) return;
@@ -154,7 +156,7 @@ public partial class MainWindowViewModel
                     return false;
 
                 string? videoPath = null;
-                foreach (var name in new[] { "pv.mp4", "mv.mp4", "bg.mp4" })
+                foreach (var name in videoNames)
                 {
                     var dir = Path.Combine(maidataDir, name);
                     if (File.Exists(dir))
@@ -285,3 +287,4 @@ public partial class MainWindowViewModel
         }
     }
 }
+

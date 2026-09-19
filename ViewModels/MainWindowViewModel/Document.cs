@@ -1,8 +1,8 @@
 using AvaloniaEdit.Document;
+using Cimai;
 using CommunityToolkit.Mvvm.ComponentModel;
 using MajdataEdit_Neo.Types;
 using MajdataEdit_Neo.Types.SimaiAnalyzer;
-using MajSimai;
 using System;
 using System.Collections.Generic;
 using System.Diagnostics;
@@ -13,7 +13,8 @@ using System.Threading.Tasks;
 namespace MajdataEdit_Neo.ViewModels;
 
 /// <summary>
-/// 谱面文档管理
+/// 谱面文档管理。所有字段都在 MaidataFile 上直接读写；Cimai 的 Chart 实例由
+/// MaidataFile 自己保活，外部只通过 CurrentChart 这个引用观察 Chart span 源。
 /// </summary>
 public partial class MainWindowViewModel
 {
@@ -27,9 +28,17 @@ public partial class MainWindowViewModel
     [NotifyPropertyChangedFor(nameof(Offset))]
     [NotifyPropertyChangedFor(nameof(IsLoaded))]
     [NotifyPropertyChangedFor(nameof(CurrentFumen))]
-    public partial SimaiFile? CurrentSimaiFile { get; set; } = null;
+    public partial MaidataFile CurrentMaidata { get; set; } = MaidataFile.Empty;
 
-    partial void OnCurrentSimaiFileChanged(SimaiFile? value) => RefreshFumenDocument();
+    [ObservableProperty]
+    public partial SimaiChart CurrentChart { get; set; } = SimaiChart.Empty;
+
+    partial void OnCurrentMaidataChanged(MaidataFile oldValue, MaidataFile newValue)
+    {
+        RefreshFumenDocument();
+        if (!ReferenceEquals(oldValue, newValue))
+            oldValue.Dispose();
+    }
 
     [ObservableProperty]
     [NotifyPropertyChangedFor(nameof(Level))]
@@ -39,11 +48,6 @@ public partial class MainWindowViewModel
 
     partial void OnSelectedDifficultyChanged(int value) => RefreshFumenDocument();
 
-    [ObservableProperty]
-    internal partial MutSimaiChartMetadata[] CurrentChartMetadata { get; set; } = new MutSimaiChartMetadata[7];
-
-    [ObservableProperty]
-    public partial SimaiChart CurrentChartData { get; set; } = SimaiChart.Empty;
     public TextDocument FumenDocument => _fumenDocument;
 
     //------editor state
@@ -54,7 +58,7 @@ public partial class MainWindowViewModel
 
     [ObservableProperty]
     [NotifyPropertyChangedFor(nameof(SimaiDiagnosticsCount))]
-    public partial IReadOnlyList<SimaiDiagnostic> SimaiDiagnostics { get; set; }
+    public partial IReadOnlyList<SimaiDiagnostic> SimaiDiagnostics { get; set; } = Array.Empty<SimaiDiagnostic>();
 
     [ObservableProperty]
     public partial List<(double, int, int)> Signatures { get; set; } = [(0, 4, 4)];
@@ -63,99 +67,57 @@ public partial class MainWindowViewModel
 
     internal readonly TextDocument _fumenDocument = new();
     internal readonly Lock _fumenContentChangedSyncLock = new();
-    readonly string[] _level = new string[7];
-    float _offset = 0;
 
     public string OriginFumen { get; set; } = string.Empty;
 
     //------derived properties
 
-    public bool IsLoaded => CurrentSimaiFile is not null;
+    public bool IsLoaded => !CurrentMaidata.IsEmpty;
 
     public int SimaiDiagnosticsCount =>
         SimaiDiagnostics?.Count(o => o.Severity == Severity.Error) ?? 0;
 
-    /// <summary>
-    /// 用于WindowTitle的后缀部分（标题 + 保存标记）
-    /// </summary>
-    public string WindowTitleSuffix
-    {
-        get
-        {
-            if (CurrentSimaiFile is null) return "";
-            return $" - {CurrentSimaiFile.Title}" + (IsSaved ? "" : "*");
-        }
-    }
+    /// <summary>用于WindowTitle的后缀部分（标题 + 保存标记）</summary>
+    public string WindowTitleSuffix =>
+        CurrentMaidata.IsEmpty ? "" : $" - {CurrentMaidata.Title}" + (IsSaved ? "" : "*");
 
-
-    public string CurrentFumen
-    {
-        get
-        {
-            if (CurrentSimaiFile is null)
-                return string.Empty;
-            return CurrentChartMetadata[SelectedDifficulty].Fumen;
-        }
-    }
+    public string CurrentFumen =>
+        CurrentMaidata.IsEmpty ? string.Empty : CurrentMaidata.Fumens[SelectedDifficulty];
 
     public float Offset
     {
-        get
-        {
-            if (CurrentSimaiFile is null) return _offset;
-            _offset = CurrentSimaiFile.Offset;
-            return _offset;
-        }
+        get => CurrentMaidata?.Offset ?? 0;
         set
         {
-            if (CurrentSimaiFile is null) return;
-            CurrentSimaiFile.Offset = value;
-            SetProperty(ref _offset, value);
-            OnPropertyChanged(nameof(CurrentSimaiFile));
+            if (CurrentMaidata.IsEmpty) return;
+            CurrentMaidata.Offset = value;
+            OnPropertyChanged(nameof(Offset));
         }
     }
 
     public string Level
     {
-        get
-        {
-            if (CurrentSimaiFile is null || CurrentChartMetadata[SelectedDifficulty] is null) return "";
-            _level[SelectedDifficulty] = CurrentChartMetadata[SelectedDifficulty].Level;
-            return _level[SelectedDifficulty];
-        }
+        get => CurrentMaidata.IsEmpty ? "" : CurrentMaidata.Levels[SelectedDifficulty];
         set
         {
-            if (CurrentSimaiFile is null || CurrentChartMetadata[SelectedDifficulty] is null) return;
-            CurrentChartMetadata[SelectedDifficulty].Level = value;
-            Debug.WriteLine(SelectedDifficulty);
-            SetProperty(ref _level[SelectedDifficulty], value);
-            OnPropertyChanged(nameof(CurrentSimaiFile));
+            if (CurrentMaidata.IsEmpty) return;
+            CurrentMaidata.Levels[SelectedDifficulty] = value;
+            OnPropertyChanged(nameof(Level));
         }
     }
 
     public string Designer
     {
-        get
-        {
-            if (CurrentSimaiFile is null || CurrentChartMetadata[SelectedDifficulty] is null) return "";
-            var text = CurrentChartMetadata[SelectedDifficulty].Designer;
-            if (text is null) return "";
-            return text;
-        }
+        get => CurrentMaidata.IsEmpty ? "" : CurrentMaidata.Designers[SelectedDifficulty];
         set
         {
-            if (CurrentSimaiFile is null || CurrentChartMetadata[SelectedDifficulty] is null) return;
-            var text = CurrentChartMetadata[SelectedDifficulty].Designer;
-            if (text is null) return;
-            SetProperty(ref text, value);
-            CurrentChartMetadata[SelectedDifficulty].Designer = text;
-            OnPropertyChanged(nameof(CurrentSimaiFile));
+            if (CurrentMaidata.IsEmpty) return;
+            CurrentMaidata.Designers[SelectedDifficulty] = value;
+            OnPropertyChanged(nameof(Designer));
         }
     }
 
-    /// <summary>
-    /// IsFumenContextChanged 的行为：同时更新 IsSaved 和 AutoSave 的 IsFileChanged
-    /// </summary>
+    /// <summary>IsFumenContextChanged 的行为：同时更新 IsSaved 和 AutoSave 的 IsFileChanged</summary>
     public bool IsFumenContextChanged
     {
         get => !IsSaved;
@@ -164,18 +126,14 @@ public partial class MainWindowViewModel
 
     //------initialization
 
-    private void InitializeDocument()
-    {
-        for (var i = 0; i < 7; i++) CurrentChartMetadata[i] = new MutSimaiChartMetadata();
-    }
+    private void InitializeDocument() { }
 
     //------methods
 
     public void RefreshFumenDocument()
     {
-        if (CurrentSimaiFile is null)
+        if (CurrentMaidata.IsEmpty)
         {
-            CurrentChartData = SimaiChart.Empty;
             if (_fumenDocument.Text != string.Empty)
             {
                 _fumenDocument.Text = string.Empty;
@@ -186,12 +144,8 @@ public partial class MainWindowViewModel
         }
 
         var difficulty = SelectedDifficulty;
-        var metadata = CurrentChartMetadata[difficulty];
-        var fumenContent = metadata.Fumen ?? string.Empty;
+        var fumenContent = CurrentMaidata.Fumens[difficulty] ?? string.Empty;
         OriginFumen = fumenContent;
-        CurrentChartData = string.IsNullOrEmpty(fumenContent)
-            ? SimaiChart.Empty
-            : CurrentSimaiFile.Charts[difficulty];
 
         if (_fumenDocument.Text != fumenContent)
         {
@@ -202,43 +156,25 @@ public partial class MainWindowViewModel
 
     public async Task SetFumenContent(string content)
     {
-        var simaiFile = CurrentSimaiFile;
-        if (simaiFile is null) return;
+        var file = CurrentMaidata;
+        if (file is null) return;
         content ??= string.Empty;
 
         var difficulty = SelectedDifficulty;
-        var metadata = CurrentChartMetadata[difficulty];
-        metadata.Fumen = content;
-        simaiFile.Charts[difficulty] = new SimaiChart(
-            metadata.Level,
-            metadata.Designer,
-            content,
-            ReadOnlySpan<SimaiTimingPoint>.Empty,
-            ReadOnlySpan<SimaiTimingPoint>.Empty);
+        file.Fumens[difficulty] = content;
         UpdateFumenContextChanged();
-
-        if (string.IsNullOrEmpty(content))
-        {
-            simaiFile.Charts[difficulty] = SimaiChart.Empty;
-            if (ReferenceEquals(CurrentSimaiFile, simaiFile) && SelectedDifficulty == difficulty)
-                CurrentChartData = SimaiChart.Empty;
-            FumenContentChanged?.Invoke(this, EventArgs.Empty);
-            return;
-        }
 
         try
         {
-            var data = await SimaiParser.ParseChartAsync(metadata.Level, metadata.Designer, content);
+            var newChart = SimaiChart.Parse(content);
+            file.ReplaceChart(difficulty, newChart);
+            CurrentChart = newChart;
 
-            if (!ReferenceEquals(CurrentSimaiFile, simaiFile) ||
-                CurrentChartMetadata[difficulty].Fumen != content)
+            if (!ReferenceEquals(CurrentMaidata, file) ||
+                file.Fumens[difficulty] != content)
             {
                 return;
             }
-
-            simaiFile.Charts[difficulty] = data;
-            if (SelectedDifficulty == difficulty)
-                CurrentChartData = data;
         }
         catch (Exception ex)
         {
@@ -248,26 +184,20 @@ public partial class MainWindowViewModel
         FumenContentChanged?.Invoke(this, EventArgs.Empty);
     }
 
-    public SimaiTimingPoint? GetNearestCommaTimingFromPos(int rawPosition)
+    public SimaiTiming? GetNearestCommaTimingFromPos(int rawPosition)
     {
-        var timings = CurrentChartData.CommaTimings;
+        var timings = CurrentMaidata.IsEmpty ? default : CurrentMaidata.GetChart(SelectedDifficulty).Timings;
         if (timings.Length == 0) return null;
 
-        SimaiTimingPoint nearestTiming = timings[0];
         foreach (var timing in timings)
         {
-            if (timing.RawTextPosition >= rawPosition)
-            {
-                nearestTiming = timing;
-                break;
-            }
+            if ((ulong)timing.FumenPos >= (ulong)rawPosition)
+                return timing;
         }
-        return nearestTiming;
+        return timings[0];
     }
 
-    /// <summary>
-    /// 检查fumen内容是否已变更
-    /// </summary>
+    /// <summary>检查fumen内容是否已变更</summary>
     public void UpdateFumenContextChanged()
     {
         lock (_fumenContentChangedSyncLock)
@@ -276,9 +206,7 @@ public partial class MainWindowViewModel
         }
     }
 
-    /// <summary>
-    /// 标记为已保存
-    /// </summary>
+    /// <summary>标记为已保存</summary>
     public void MarkAsSaved()
     {
         lock (_fumenContentChangedSyncLock)
@@ -290,6 +218,6 @@ public partial class MainWindowViewModel
 
     public void NotifySimaiFileChanged()
     {
-        OnPropertyChanged(nameof(CurrentSimaiFile));
+        OnPropertyChanged(nameof(CurrentMaidata));
     }
 }

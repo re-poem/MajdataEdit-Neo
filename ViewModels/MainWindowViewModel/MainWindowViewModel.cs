@@ -19,7 +19,7 @@ namespace MajdataEdit_Neo.ViewModels;
 
 /// <summary>
 /// Composition root: holds and coordinates all editor state, provides window-level UI state.
-/// Split into partial files by function: Document.cs, FileSession.cs, Playback.cs, Tools.cs,
+/// Split into partial files by videoNames: Document.cs, FileSession.cs, Playback.cs, Tools.cs,
 /// AutoSave.cs, DiscordRpc.cs, Plugin.cs, Settings.cs, Update.cs.
 /// </summary>
 public partial class MainWindowViewModel : ViewModelBase
@@ -38,7 +38,7 @@ public partial class MainWindowViewModel : ViewModelBase
         get
         {
             var baseTitle = $"MajdataEdit Neo {MAJDATA_VERSION_STRING}";
-            if (CurrentSimaiFile is null) return baseTitle;
+            if (CurrentMaidata.IsEmpty) return baseTitle;
             return baseTitle + WindowTitleSuffix;
         }
     }
@@ -72,7 +72,7 @@ public partial class MainWindowViewModel : ViewModelBase
         // Design-time support
         if (Design.IsDesignMode)
         {
-            CurrentSimaiFile = MajSimai.SimaiFile.Empty("", "");
+            CurrentMaidata = MaidataFile.Parse("&title=\n&artist=\n&first=0\n");
         }
     }
 
@@ -139,8 +139,9 @@ public partial class MainWindowViewModel : ViewModelBase
 
     public async void OpenSettingsWindow()
     {
-        var mainWindow = Application.Current?.ApplicationLifetime as IClassicDesktopStyleApplicationLifetime;
-        if (mainWindow is null || mainWindow.MainWindow is null) return;
+        if (Application.Current?.ApplicationLifetime is not
+            IClassicDesktopStyleApplicationLifetime mainWindow ||
+            mainWindow.MainWindow is null) return;
 
         var settingsViewModel = new SettingsViewModel();
         settingsViewModel.LoadSettings(Settings);
@@ -155,15 +156,15 @@ public partial class MainWindowViewModel : ViewModelBase
 
     public async void OpenChartInfoWindow()
     {
-        if (CurrentSimaiFile is null) return;
+        if (CurrentMaidata.IsEmpty) return;
         var mainWindow = Application.Current?.ApplicationLifetime as IClassicDesktopStyleApplicationLifetime;
         if (mainWindow is null || mainWindow.MainWindow is null) return;
         using var chartInfo = new ChartInfoViewModel()
         {
-            Title = CurrentSimaiFile.Title,
-            Artist = CurrentSimaiFile.Artist,
-            FinalDesigner = CurrentSimaiFile.FinalDesigner,
-            SimaiCommands = [.. CurrentSimaiFile.Commands.Select(c => new MutSimaiCommand(c.Prefix, c.Value))],
+            Title = CurrentMaidata.Title,
+            Artist = CurrentMaidata.Artist,
+            FinalDesigner = CurrentMaidata.Designer,
+            SimaiCommands = [.. CurrentMaidata.Commands.Select(c => new MutSimaiCommand(c.Key, c.Value))],
             MaidataDir = MaidataDir
         };
         var window = new ChartInfoWindow
@@ -175,16 +176,16 @@ public partial class MainWindowViewModel : ViewModelBase
         if (datacontext is null)
             throw new InvalidOperationException("Chart info window has an unexpected data context.");
 
-        CurrentSimaiFile.Title = datacontext.Title ?? string.Empty;
-        CurrentSimaiFile.Artist = datacontext.Artist ?? string.Empty;
-        CurrentSimaiFile.FinalDesigner = datacontext.FinalDesigner ?? string.Empty;
-        CurrentSimaiFile.Commands.Clear();
-        foreach (var item in datacontext.SimaiCommands)
-            CurrentSimaiFile.Commands.Add(item);
+        // 直接写 MaidataFile 的字段，没有 init-only，没有 native handle 要保活。
+        CurrentMaidata.Title = datacontext.Title ?? string.Empty;
+        CurrentMaidata.Artist = datacontext.Artist ?? string.Empty;
+        CurrentMaidata.Designer = datacontext.FinalDesigner ?? string.Empty;
+        CurrentMaidata.Commands.Clear();
+        foreach (var c in datacontext.SimaiCommands)
+            CurrentMaidata.Commands.Add(new MutSimaiCommand(c.Key, c.Value));
 
         await Task.Delay(100);
         NotifySimaiFileChanged();
-        await EditorLoad(MaidataDir);
     }
 
     public async void OpenRecoverWindow()

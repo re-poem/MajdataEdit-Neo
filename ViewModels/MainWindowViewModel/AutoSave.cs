@@ -1,7 +1,7 @@
 using MajdataEdit_Neo.Base;
 using MajdataEdit_Neo.Modules.AutoSave;
 using MajdataEdit_Neo.Modules.AutoSave.Contexts;
-using MajSimai;
+using MajdataEdit_Neo.Types;
 using System;
 using System.Collections.Generic;
 using System.Diagnostics;
@@ -22,7 +22,7 @@ public partial class MainWindowViewModel
     AutoSaveManager _manager = null!;
     readonly Lock _syncLock = new();
 
-    SimaiFile? _pendingSimaiFile;
+    MaidataFile? _pendingSimaiFile;
     long _updateVersion;
     bool _updateWorkerRunning;
     Task _updateTask = Task.CompletedTask;
@@ -84,7 +84,7 @@ public partial class MainWindowViewModel
         }
     }
 
-    public Task OnSimaiFileChangedAsync(SimaiFile? simaiFile)
+    public Task OnSimaiFileChangedAsync(MaidataFile? simaiFile)
     {
         var startWorker = false;
         lock (_syncLock)
@@ -108,7 +108,7 @@ public partial class MainWindowViewModel
     {
         while (true)
         {
-            SimaiFile? pendingFile;
+            MaidataFile? pendingFile;
             long version;
             lock (_syncLock)
             {
@@ -125,7 +125,7 @@ public partial class MainWindowViewModel
 
             try
             {
-                var maidata = await SimaiParser.DeparseAsync(pendingFile);
+                var maidata = MaidataFile.Deparse(pendingFile);
 
                 lock (_syncLock)
                 {

@@ -9,59 +9,11 @@ namespace MajdataEdit_Neo.Base;
 
 public static partial class MajEnv
 {
-    private const string ViewCompanyName = "bbben";
-    private const string ViewProductName = "MajdataViewX";
-
     public static string MajBase => AppDomain.CurrentDomain.BaseDirectory;
     public static string GetPath(string relativePath) => Path.Combine(MajBase, relativePath);
 
-    public static string MajdataViewPersistentDataPath
-    {
-        get
-        {
-            if (OperatingSystem.IsWindows())
-            {
-                var localAppData = Environment.GetFolderPath(
-                    Environment.SpecialFolder.LocalApplicationData);
-                var appData = Directory.GetParent(localAppData)?.FullName
-                    ?? Environment.GetFolderPath(Environment.SpecialFolder.UserProfile);
-                return Path.Combine(
-                    appData,
-                    "LocalLow",
-                    ViewCompanyName,
-                    ViewProductName);
-            }
-
-            if (OperatingSystem.IsMacOS())
-            {
-                return Path.Combine(
-                    Environment.GetFolderPath(Environment.SpecialFolder.UserProfile),
-                    "Library",
-                    "Application Support",
-                    ViewCompanyName,
-                    ViewProductName);
-            }
-
-            var configHome = Environment.GetEnvironmentVariable("XDG_CONFIG_HOME");
-            if (string.IsNullOrWhiteSpace(configHome))
-            {
-                configHome = Path.Combine(
-                    Environment.GetFolderPath(Environment.SpecialFolder.UserProfile),
-                    ".config");
-            }
-            return Path.Combine(
-                configHome,
-                "unity3d",
-                ViewCompanyName,
-                ViewProductName);
-        }
-    }
-
     public static string MmfAudioTimePath =>
-        Path.Combine(MajdataViewPersistentDataPath, "majdata_time.dat");
-    public const long MmfChartDataCapacity = 64 * 1024 * 1024; //64mb
-    public static string MmfChartDataPath =>
-        Path.Combine(MajdataViewPersistentDataPath, "majdata_chart.dat");
+        GetPath("majdata_time.dat");
 
     public static string MajdataViewBassDllFile
     {
@@ -135,8 +87,6 @@ public static partial class MajEnv
         }
     }
 
-    //尽量少使用预编译，不指望到了每个平台再来纠正编译错误，只有必要场合/性能热点使用
-#if WINDOWS
     [LibraryImport("user32.dll")]
     [return: MarshalAs(UnmanagedType.Bool)]
     private static partial bool SetForegroundWindow(IntPtr hWnd);
@@ -144,7 +94,6 @@ public static partial class MajEnv
     [LibraryImport("user32.dll")]
     [return: MarshalAs(UnmanagedType.Bool)]
     private static partial bool ShowWindow(IntPtr hWnd, int nCmdShow);
-#endif
 
     public static readonly string MAJDATA_VERSION_STRING = $"v{Assembly.GetExecutingAssembly().GetName().Version!.ToString(3)}";
     public static readonly SemVersion MAJDATA_VERSION = SemVersion.Parse(MAJDATA_VERSION_STRING, SemVersionStyles.Any);

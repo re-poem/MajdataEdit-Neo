@@ -186,7 +186,7 @@
 			<controls:SimaiVisualizerControl Name="SimaiVisual"
 											 Height="100" Grid.Row="4" Grid.ColumnSpan="4"
 											 Time="{Binding TrackTime}" TrackIf="{Binding SongTrackInfo}"
-											 ZoomLevel="{Binding TrackZoomLevel}" SimaiChart="{Binding CurrentChartData}"
+											 ZoomLevel="{Binding TrackZoomLevel}" Chart="{Binding CurrentChart}"
 											 Offset="{Binding Offset}" CaretTime="{Binding CaretTime}"
 											 IsAnimated ="{Binding IsAnimated}" Signatures="{Binding Signatures}"/>
 			<DockPanel Grid.Row="4" >
@@ -258,6 +258,7 @@
 
 	</Panel>
 </Window>
+
 
 
 

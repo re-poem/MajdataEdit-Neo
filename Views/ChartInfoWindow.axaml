@@ -52,7 +52,7 @@
               <DataTemplate>
                 <Grid Margin="0 0 0 5" ColumnDefinitions="Auto,*,Auto,*,Auto" ColumnSpacing="5">
                   <Label Grid.Column="0" Margin="0 3.5 0 0">&amp;</Label>
-                  <TextBox Grid.Column="1" Text="{Binding Prefix}"/>
+                  <TextBox Grid.Column="1" Text="{Binding Key}"/>
                   <Label Grid.Column="2" Margin="0 3.5 0 0">=</Label>
                   <TextBox Grid.Column="3" Text="{Binding Value}"/>
                   <Button Grid.Column="4" VerticalAlignment="Stretch"

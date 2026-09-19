@@ -18,7 +18,7 @@ namespace MajdataEdit_Neo.ViewModels;
 public partial class MainWindowViewModel
 {
     //reload setting required
-    [ObservableProperty] public partial MajSetting Settings { get; set; }
+    [ObservableProperty] public partial MajSetting Settings { get; set; } = null!;
     [ObservableProperty] public partial double FontSize { get; set; }
     [ObservableProperty] public partial bool IsAnimated { get; set; }
     [ObservableProperty] public partial Bitmap BackgroundImage { get; set; }
@@ -76,7 +76,12 @@ public partial class MainWindowViewModel
 
         _ = _playerConnection.SettingAsync(Settings.ViewSetting, Settings.VolumeSetting);
         if (update)
-            _ = _playerConnection.UpdateAsync(CurrentSimaiFile!, CurrentChartData, SelectedDifficulty);
+        {
+            var file = CurrentMaidata!;
+            var chartText = file.Fumens[SelectedDifficulty] ?? string.Empty;
+            _ = _playerConnection.UpdateAsync(file, SelectedDifficulty, chartText,
+                file.Levels[SelectedDifficulty] ?? "", file.Designers[SelectedDifficulty] ?? "");
+        }
     }
 
     public void SetWindowLastState(Window window)

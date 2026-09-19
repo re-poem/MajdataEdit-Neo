@@ -343,7 +343,7 @@ public partial class MainWindow : Window
         var delta = x - lastX;
         if (point.Properties.IsLeftButtonPressed)
         {
-            var docseek = viewModel.SlideTrackTime((float)delta * 10f / Width, viewModel.SongTrackInfo, viewModel.CurrentChartData, viewModel.CurrentSimaiFile?.Offset ?? 0);
+            var docseek = viewModel.SlideTrackTime((float)delta * 10f / Width, viewModel.SongTrackInfo, viewModel.CurrentMaidata.GetChart(viewModel.SelectedDifficulty).Timings, viewModel.CurrentMaidata?.Offset ?? 0);
             SeekToDocPos(docseek, textEditor);
         }
         lastX = x;
@@ -387,7 +387,7 @@ public partial class MainWindow : Window
         }
         else
         {
-            var docseek = viewModel.SlideTrackTime(e.Delta.Y, viewModel.SongTrackInfo, viewModel.CurrentChartData, (viewModel.CurrentSimaiFile?.Offset ?? 0));
+            var docseek = viewModel.SlideTrackTime(e.Delta.Y, viewModel.SongTrackInfo, viewModel.CurrentMaidata.GetChart(viewModel.SelectedDifficulty).Timings, (viewModel.CurrentMaidata?.Offset ?? 0));
             SeekToDocPos(docseek, textEditor);
         }
     }
@@ -543,9 +543,7 @@ public partial class MainWindow : Window
             UpdateCaretPosition(seek, false);
             _isTextChangedBeforeCaretMoving = false;
 
-            var fumen = viewModel
-                .CurrentChartMetadata[viewModel.SelectedDifficulty]
-                .Fumen;
+            var fumen = viewModel.CurrentMaidata!.Fumens[viewModel.SelectedDifficulty];
             var diags = await Task.Run(() =>
             {
                 cancellationToken.ThrowIfCancellationRequested();
@@ -559,22 +557,22 @@ public partial class MainWindow : Window
             markerService.UpdateDiags(diags);
 
             var signatures = new List<(double, int, int)>();
-            var timingList = viewModel.CurrentChartData.CommaTimings;
+            var timingList = viewModel.CurrentMaidata!.GetChart(viewModel.SelectedDifficulty).Timings;
             if (timingList.Length > 0)
             {
                 var firstTiming = timingList[0];
-                var lastNum = firstTiming.SignatureNumerator;
-                var lastDeno = firstTiming.SignatureDenominator;
-                signatures.Add((firstTiming.Timing, lastNum, lastDeno));
+                var lastNum = firstTiming.SignNum;
+                var lastDeno = firstTiming.SignDen;
+                signatures.Add((firstTiming.Time, lastNum, lastDeno));
 
                 for (var i = 1; i < timingList.Length; i++)
                 {
                     var timing = timingList[i];
-                    if (timing.SignatureNumerator != lastNum || timing.SignatureDenominator != lastDeno)
+                    if (timing.SignNum != lastNum || timing.SignDen != lastDeno)
                     {
-                        signatures.Add((timing.Timing, timing.SignatureNumerator, timing.SignatureDenominator));
-                        lastNum = timing.SignatureNumerator;
-                        lastDeno = timing.SignatureDenominator;
+                        signatures.Add((timing.Time, timing.SignNum, timing.SignDen));
+                        lastNum = timing.SignNum;
+                        lastDeno = timing.SignDen;
                     }
                 }
             }
