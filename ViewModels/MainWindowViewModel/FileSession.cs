@@ -299,7 +299,5 @@ public partial class MainWindowViewModel
         {
             Debug.WriteLine($"Failed to dispose Discord RPC: {ex}");
         }
-
-        CurrentMaidata = MaidataFile.Empty;
     }
 }

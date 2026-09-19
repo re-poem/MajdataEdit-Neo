@@ -26,6 +26,8 @@ public static class ShortcutDefinitions
         new("Gui_MirrorVertically", "Ctrl + K", new(Key.K, KeyModifiers.Control), "mirror_v"),
         new("Gui_Mirror180", "Ctrl + L", new(Key.L, KeyModifiers.Control), "mirror_180"),
         new("Gui_Rotate45", "Ctrl + ;", new(Key.OemSemicolon, KeyModifiers.Control), "rotate_r"),
-        new("Gui_RotateNeg45", "Ctrl + '", new(Key.OemQuotes, KeyModifiers.Control), "rotate_l")
+        new("Gui_RotateNeg45", "Ctrl + '", new(Key.OemQuotes, KeyModifiers.Control), "rotate_l"),
+        new("Shortcut_IncreaseFontSize", "Ctrl + +", new(Key.OemPlus, KeyModifiers.Control)),
+        new("Shortcut_DecreaseFontSize", "Ctrl + -", new(Key.OemMinus, KeyModifiers.Control)),
     ];
 }

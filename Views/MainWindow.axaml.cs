@@ -162,6 +162,8 @@ public partial class MainWindow : Window
                     "Shortcut_PlayIncludeOp" => new Action(() => viewModel.PlayIncludeOpCommand.Execute(null)),
                     "Shortcut_IncreasePlaybackSpeed" => new Action(() => viewModel.IncreasePlaybackSpeedCommand.Execute(null)),
                     "Shortcut_DecreasePlaybackSpeed" => new Action(() => viewModel.DecreasePlaybackSpeedCommand.Execute(null)),
+                    "Shortcut_IncreaseFontSize" => new Action(() => viewModel.ChangeFontSizeCommand.Execute(1)),
+                    "Shortcut_DecreaseFontSize" => new Action(() => viewModel.ChangeFontSizeCommand.Execute(-1)),
                     _ => throw new InvalidOperationException($"Unknown shortcut: {shortcut.FunctionKey}")
                 };
 
@@ -310,20 +312,6 @@ public partial class MainWindow : Window
             e.Handled = true;
             return;
         }
-
-        if (!e.KeyModifiers.HasFlag(KeyModifiers.Control)) return;
-
-        var fontSizeDelta = e.Key switch
-        {
-            Key.OemPlus or Key.Add => 1,
-            Key.OemMinus or Key.Subtract => -1,
-            _ => 0
-        };
-
-        if (fontSizeDelta == 0) return;
-
-        viewModel.ChangeFontSizeCommand.Execute(fontSizeDelta);
-        e.Handled = true;
     }
 
     private void Caret_PositionChanged(object? sender, EventArgs e)
