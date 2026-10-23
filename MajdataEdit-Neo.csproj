@@ -28,6 +28,11 @@
 	</PropertyGroup>
 	<PropertyGroup Condition="'$(IsLinux)'=='true'">
 		<DefineConstants>LINUX</DefineConstants>
+
+		<BassLinuxX64TargetDir>runtimes/linux-x64/native</BassLinuxX64TargetDir>
+		<BassLinuxX86TargetDir>runtimes/linux-x86/native</BassLinuxX86TargetDir>
+		<BassLinuxARMTargetDir>runtimes/linux-arm/native</BassLinuxARMTargetDir>
+		<BassLinuxARM64TargetDir>runtimes/linux-arm64/native</BassLinuxARM64TargetDir>
 	</PropertyGroup>
 
 	<ItemGroup>
@@ -66,6 +71,8 @@
 		<PackageReference Include="websocketsharp.core" Version="1.0.1" />
 		<PackageReference Include="Microsoft.Data.Sqlite" Version="10.0.12" />
 		<PackageReference Include="SQLitePCLRaw.bundle_e_sqlite3" Version="3.0.5" />
+
+		<PackageReference Condition="'$(IsLinux)'=='true'" Include="Dove.Bass.Linux" Version="1.0.0" />
 	</ItemGroup>
 
 	<ItemGroup>
